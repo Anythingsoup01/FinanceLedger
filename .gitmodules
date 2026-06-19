@@ -1,3 +1,6 @@
 [submodule "Ferret"]
 	path = Ferret
 	url = https://github.com/Anythingsoup01/Ferret
+[submodule "vendor/Prebuild"]
+	path = vendor/Prebuild
+	url = https://github.com/Anythingsoup01/Prebuild
