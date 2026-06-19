@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 4.3.4)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+project(FerretAppTemplate LANGUAGES C CXX)
+add_subdirectory(Ferret)
+add_subdirectory(FerretApp)
