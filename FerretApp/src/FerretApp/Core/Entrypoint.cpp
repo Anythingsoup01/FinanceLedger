@@ -13,10 +13,6 @@ Ferret::Application *Ferret::CreateApplication(int argc, char **argv) {
   app->PushLayer(layer);
   app->SetMenubarCallback([app, layer]() {
     if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("Example")) {
-        // Do static function here
-        layer->LogExample();
-      }
       if (ImGui::MenuItem("Exit")) {
         app->OnApplicationExit();
       }

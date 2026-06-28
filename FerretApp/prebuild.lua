@@ -11,12 +11,13 @@ Project = {
 
 	includedirs = {
 		"src",
-		"../Ferret/Ferret/src",
-		"${WORKSPACEDIR}Ferret/vendor/glfw/include",
-		"${WORKSPACEDIR}Ferret/vendor/glad/include",
-		"${WORKSPACEDIR}Ferret/vendor/spdlog/include",
-		"${WORKSPACEDIR}Ferret/vendor/glm",
-		"${WORKSPACEDIR}Ferret/vendor/imgui",
+		"${WORKSPACEDIR}/Ferret/Ferret/src",
+		"${WORKSPACEDIR}/Ferret/vendor/glfw/include",
+		"${WORKSPACEDIR}/Ferret/vendor/glad/include",
+		"${WORKSPACEDIR}/Ferret/vendor/spdlog/include",
+		"${WORKSPACEDIR}/Ferret/vendor/glm",
+		"${WORKSPACEDIR}/Ferret/vendor/imgui",
+    "${WORKSPACEDIR}/Ferret/vendor/yaml-cpp/include/"
 	},
 
 	links = {

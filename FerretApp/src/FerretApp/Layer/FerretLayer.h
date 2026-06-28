@@ -4,21 +4,24 @@
 #include "Ferret/Core/Event/KeyEvent.h"
 #include "Ferret/Layer/Layer.h"
 
-namespace Ferret
-{
-    class FerretLayer : public Layer
-    {
-    public:
-        virtual void OnAttach() override;
-        virtual void OnDetach() override;
+#include "FerretApp/Core/Table.h"
+namespace Ferret {
 
-        virtual void OnUpdate() override;
-        virtual void OnUIRender() override;
-        virtual void OnEvent(Event& event) override;
+class FerretLayer : public Layer {
+public:
+  virtual void OnAttach() override;
+  virtual void OnDetach() override;
 
-        bool OnKeyPressedEvent(KeyPressedEvent& e);
+  virtual void OnUpdate() override;
+  virtual void OnUIRender() override;
+  virtual void OnEvent(Event &event) override;
 
-        static void LogExample();
-    private:
-    };
-}
+  bool OnKeyPressedEvent(KeyPressedEvent &e);
+
+private:
+  // TODO: Make a proper renderer to display multiple of these
+  AccountTable m_Table;
+  AccountTable m_Table2;
+};
+
+} // namespace Ferret
