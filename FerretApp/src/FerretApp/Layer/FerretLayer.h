@@ -5,6 +5,9 @@
 #include "Ferret/Layer/Layer.h"
 
 #include "FerretApp/Core/Table.h"
+
+#include <yaml-cpp/yaml.h>
+
 namespace Ferret {
 
 class FerretLayer : public Layer {
@@ -19,8 +22,10 @@ public:
   bool OnKeyPressedEvent(KeyPressedEvent &e);
 
 private:
-  // TODO: Make a proper renderer to display multiple of these
-  std::vector<AccountTable> m_Tables;
+  void SerializeTables(YAML::Emitter &out, AccountTable *table);
+  bool DeserializeTables();
+private:
+  std::map<int, AccountTable> m_Tables;
 };
 
 } // namespace Ferret

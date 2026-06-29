@@ -117,6 +117,12 @@ public:
   // This will draw the entire table as an item with other tables,
   // rather than being it's own window
   void Draw();
+
+  // This will set the Next variable
+  inline void SetNext(AccountTable *next) { m_Next = next; }
+
+  // This will get the Next variable
+  inline AccountTable *GetNext() { return m_Next; }
 private:
   // Used by both Draw and DrawIndividual to actually render the table
   void DrawHelper();
@@ -134,6 +140,7 @@ private:
   float m_MaxTableWidth = -1;   // Holds the maximum table width
   float m_EntryHeight = -1;     // Used to increment m_MaxTableHeight
   float m_EntryWidth = -1;      // Used to set m_MaxTableWidth
+  AccountTable *m_Next = nullptr; // Used to get the next table id (for now); TODO: Handle the deletion of a table, m_Next could be pointing to garbage
 };
 
 }

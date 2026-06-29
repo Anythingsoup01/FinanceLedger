@@ -2,65 +2,62 @@
 #include "Ferret.h"
 #include "imgui.h"
 
-#include <yaml-cpp/yaml.h>
-
 namespace Ferret {
 
-std::vector<AccountTable> DeserializeTables() {
-  YAML::Node data;
-  try {
-    data = YAML::LoadFile("test.yaml");
-  } catch (YAML::ParserException &ex) {
-    FE_CLI_ERROR("Failed to load test.yaml file '{0}'", ex.what());
-    return {};
-  }
-
-  auto accounts = data["Accounts"];
-
-  if (!accounts.IsSequence()) {
-    return {};
-  }
-
-  std::vector<AccountTable> out;
-
-  for (auto account : accounts) {
-    int accountNum = account["AccountNumber"].as<int>();
-    std::string accountName = account["AccountName"].as<std::string>();
-    bool creditAcc = account["IsCreditAccount"].as<bool>();
-    AccountTable accountTable = AccountTable(accountName, accountNum, creditAcc);
-    auto debitEntries = account["DebitEntries"];
-    for (auto entry : debitEntries) {
-      Date_t date = Date(
-        entry["Month"].as<int>(),
-        entry["Day"].as<int>(),
-        entry["Year"].as<int>()
-      );
-      int accountId = entry["AccountID"].as<int>();
-      float amount = entry["Amount"].as<float>();
-      accountTable.InsertDebitEntry(date, accountId, amount);
-    }
-    auto creditEntries = account["CreditEntries"];
-    for (auto entry : creditEntries) {
-      Date_t date = Date(
-        entry["Month"].as<int>(),
-        entry["Day"].as<int>(),
-        entry["Year"].as<int>()
-      );
-      int accountId = entry["AccountID"].as<int>();
-      float amount = entry["Amount"].as<float>();
-      accountTable.InsertCreditEntry(date, accountId, amount);
-    }
-    out.push_back(accountTable);
-  }
-
-  return out;
-}
 
 void FerretLayer::OnAttach() {
-  m_Tables = DeserializeTables();
+  DeserializeTables();
 }
 
-void SerializeTable(YAML::Emitter &out, AccountTable *table) {
+
+void FerretLayer::OnDetach() {
+  YAML::Emitter out;
+
+  out << YAML::BeginMap;
+  out << YAML::Key << "Accounts" << YAML::BeginSeq;
+
+  for (auto &[id, table] : m_Tables) {
+    SerializeTables(out, &table);
+  }
+
+  out << YAML::EndSeq; // Accounts
+  out << YAML::EndMap;
+
+  std::ofstream fout("test.yaml");
+  fout << out.c_str();
+}
+
+void FerretLayer::OnUpdate() {}
+
+void FerretLayer::OnUIRender() {
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGui::SetNextWindowSize(viewport->Size);
+  ImGui::SetNextWindowPos(viewport->Pos);
+  ImGuiWindowFlags wflags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
+  ImGui::Begin("Full Screen", nullptr, wflags);
+
+  for (auto &[id, table] : m_Tables) {
+    table.Draw();
+    if (table.GetNext() && table.GetNext()->GetAccountNumber() - id < 100) { // Within the same block
+      ImGui::SameLine();
+    }
+  }
+
+  ImGui::End();
+}
+
+void FerretLayer::OnEvent(Event &e) {
+  EventDispatcher dispatcher(e);
+
+  dispatcher.Dispatch<KeyPressedEvent>(
+      BIND_EVENT_FN(FerretLayer::OnKeyPressedEvent));
+}
+
+bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
+  return false;
+}
+
+void FerretLayer::SerializeTables(YAML::Emitter &out, AccountTable *table) {
   out << YAML::BeginMap; // IndiviualAccounts
   out << YAML::Key << "AccountNumber" << YAML::Value << table->GetAccountNumber();
   out << YAML::Key << "AccountName" << YAML::Value << table->GetName();
@@ -102,49 +99,58 @@ void SerializeTable(YAML::Emitter &out, AccountTable *table) {
   out << YAML::EndMap; // IndiviualAccounts
 }
 
-void FerretLayer::OnDetach() {
-  YAML::Emitter out;
-
-  out << YAML::BeginMap;
-  out << YAML::Key << "Accounts" << YAML::BeginSeq;
-
-  for (auto &table : m_Tables) {
-    SerializeTable(out, &table);
+bool FerretLayer::DeserializeTables() {
+  YAML::Node data;
+  try {
+    data = YAML::LoadFile("test.yaml");
+  } catch (YAML::ParserException &ex) {
+    FE_CLI_ERROR("Failed to load test.yaml file '{0}'", ex.what());
+    return false;
   }
 
-  out << YAML::EndSeq; // Accounts
-  out << YAML::EndMap;
+  auto accounts = data["Accounts"];
 
-  std::ofstream fout("test.yaml");
-  fout << out.c_str();
-}
-
-void FerretLayer::OnUpdate() {}
-
-void FerretLayer::OnUIRender() {
-  ImGuiViewport *viewport = ImGui::GetMainViewport();
-  ImGui::SetNextWindowSize(viewport->Size);
-  ImGui::SetNextWindowPos(viewport->Pos);
-  ImGuiWindowFlags wflags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
-  ImGui::Begin("Full Screen", nullptr, wflags);
-
-  for (auto &table : m_Tables) {
-    table.Draw();
-    ImGui::SameLine();
+  if (!accounts.IsSequence()) {
+    return false;
   }
 
-  ImGui::End();
-}
+  int prevId = -1;
 
-void FerretLayer::OnEvent(Event &e) {
-  EventDispatcher dispatcher(e);
+  for (auto account : accounts) {
+    int accountNum = account["AccountNumber"].as<int>();
+    std::string accountName = account["AccountName"].as<std::string>();
+    bool creditAcc = account["IsCreditAccount"].as<bool>();
+    AccountTable accountTable = AccountTable(accountName, accountNum, creditAcc);
+    auto debitEntries = account["DebitEntries"];
+    for (auto entry : debitEntries) {
+      Date_t date = Date(
+        entry["Month"].as<int>(),
+        entry["Day"].as<int>(),
+        entry["Year"].as<int>()
+      );
+      int accountId = entry["AccountID"].as<int>();
+      float amount = entry["Amount"].as<float>();
+      accountTable.InsertDebitEntry(date, accountId, amount);
+    }
+    auto creditEntries = account["CreditEntries"];
+    for (auto entry : creditEntries) {
+      Date_t date = Date(
+        entry["Month"].as<int>(),
+        entry["Day"].as<int>(),
+        entry["Year"].as<int>()
+      );
+      int accountId = entry["AccountID"].as<int>();
+      float amount = entry["Amount"].as<float>();
+      accountTable.InsertCreditEntry(date, accountId, amount);
+    }
+    m_Tables.emplace(std::pair<int, AccountTable>(accountNum, accountTable));
+    if (prevId != -1) {
+      m_Tables.at(prevId).SetNext(&m_Tables.at(accountNum));
+    }
+    prevId = accountNum;
+  }
 
-  dispatcher.Dispatch<KeyPressedEvent>(
-      BIND_EVENT_FN(FerretLayer::OnKeyPressedEvent));
-}
-
-bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
-  return false;
+  return true;
 }
 
 } // namespace Ferret
