@@ -108,7 +108,7 @@ public:
   // Used to retrieve the Credit EntryTable_t as a const pointer
   const EntryTable_t *GetCreditTable() const { return &m_CreditTable; }
   // Used to externally add an entry to the table, used with the serializer and (going to be used) with automatic entry insertion
-  inline void InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount);
+  void InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount);
 
   const int &GetAccountNumber() const { return m_Number; }
   const std::string &GetName() const { return m_Name; }

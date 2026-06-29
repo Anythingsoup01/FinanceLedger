@@ -20,8 +20,7 @@ public:
 
 private:
   // TODO: Make a proper renderer to display multiple of these
-  AccountTable m_Table;
-  AccountTable m_Table2;
+  std::vector<AccountTable> m_Tables;
 };
 
 } // namespace Ferret

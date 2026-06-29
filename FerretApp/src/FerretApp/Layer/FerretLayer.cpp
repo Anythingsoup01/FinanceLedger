@@ -6,22 +6,68 @@
 
 namespace Ferret {
 
-void FerretLayer::OnAttach() {
-  m_Table = AccountTable("Cash", 101, false);
-  m_Table2 = AccountTable("Will Income", 402, false);
+std::vector<AccountTable> DeserializeTables() {
+  YAML::Node data;
+  try {
+    data = YAML::LoadFile("test.yaml");
+  } catch (YAML::ParserException &ex) {
+    FE_CLI_ERROR("Failed to load test.yaml file '{0}'", ex.what());
+    return {};
+  }
+
+  auto accounts = data["Accounts"];
+
+  if (!accounts.IsSequence()) {
+    return {};
+  }
+
+  std::vector<AccountTable> out;
+
+  for (auto account : accounts) {
+    int accountNum = account["AccountNumber"].as<int>();
+    std::string accountName = account["AccountName"].as<std::string>();
+    bool creditAcc = account["IsCreditAccount"].as<bool>();
+    AccountTable accountTable = AccountTable(accountName, accountNum, creditAcc);
+    auto debitEntries = account["DebitEntries"];
+    for (auto entry : debitEntries) {
+      Date_t date = Date(
+        entry["Month"].as<int>(),
+        entry["Day"].as<int>(),
+        entry["Year"].as<int>()
+      );
+      int accountId = entry["AccountID"].as<int>();
+      float amount = entry["Amount"].as<float>();
+      accountTable.InsertDebitEntry(date, accountId, amount);
+    }
+    auto creditEntries = account["CreditEntries"];
+    for (auto entry : creditEntries) {
+      Date_t date = Date(
+        entry["Month"].as<int>(),
+        entry["Day"].as<int>(),
+        entry["Year"].as<int>()
+      );
+      int accountId = entry["AccountID"].as<int>();
+      float amount = entry["Amount"].as<float>();
+      accountTable.InsertCreditEntry(date, accountId, amount);
+    }
+    out.push_back(accountTable);
+  }
+
+  return out;
 }
 
-void FerretLayer::OnDetach() {
-  YAML::Emitter out;
+void FerretLayer::OnAttach() {
+  m_Tables = DeserializeTables();
+}
 
-  out << YAML::Key << "Accounts" << YAML::Value << YAML::BeginSeq;
+void SerializeTable(YAML::Emitter &out, AccountTable *table) {
   out << YAML::BeginMap; // IndiviualAccounts
-  out << YAML::Key << "AccountNumber" << YAML::Value << m_Table.GetAccountNumber();
-  out << YAML::Key << "AccountName" << YAML::Value << m_Table.GetName();
-  out << YAML::Key << "IsCreditAccount" << YAML::Value << m_Table.IsCreditAccount();
+  out << YAML::Key << "AccountNumber" << YAML::Value << table->GetAccountNumber();
+  out << YAML::Key << "AccountName" << YAML::Value << table->GetName();
+  out << YAML::Key << "IsCreditAccount" << YAML::Value << table->IsCreditAccount();
   out << YAML::Key << "DebitEntries" << YAML::BeginSeq;
 
-  for (auto &[id, entry] : m_Table.GetDebitTable()->GetEntries()) {
+  for (auto &[id, entry] : table->GetDebitTable()->GetEntries()) {
     out << YAML::BeginMap; // DebitEntry
 
     const Date_t &date = entry.GetDate();
@@ -36,9 +82,9 @@ void FerretLayer::OnDetach() {
   }
 
   out << YAML::EndSeq; // DebitEntries
-  out << YAML::Key << "CreditEntries" << YAML::Value << YAML::BeginSeq;
+  out << YAML::Key << "CreditEntries" << YAML::BeginSeq;
 
-  for (auto &[id, entry] : m_Table.GetCreditTable()->GetEntries()) {
+  for (auto &[id, entry] : table->GetCreditTable()->GetEntries()) {
     out << YAML::BeginMap; // CreditEntry
 
     const Date_t &date = entry.GetDate();
@@ -54,7 +100,20 @@ void FerretLayer::OnDetach() {
   out << YAML::EndSeq; // CreditEntries
 
   out << YAML::EndMap; // IndiviualAccounts
+}
+
+void FerretLayer::OnDetach() {
+  YAML::Emitter out;
+
+  out << YAML::BeginMap;
+  out << YAML::Key << "Accounts" << YAML::BeginSeq;
+
+  for (auto &table : m_Tables) {
+    SerializeTable(out, &table);
+  }
+
   out << YAML::EndSeq; // Accounts
+  out << YAML::EndMap;
 
   std::ofstream fout("test.yaml");
   fout << out.c_str();
@@ -69,13 +128,12 @@ void FerretLayer::OnUIRender() {
   ImGuiWindowFlags wflags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
   ImGui::Begin("Full Screen", nullptr, wflags);
 
-  m_Table.Draw();
-  ImGui::SameLine();
-  m_Table2.Draw();
+  for (auto &table : m_Tables) {
+    table.Draw();
+    ImGui::SameLine();
+  }
 
   ImGui::End();
-
-  //ImGui::ShowDemoWindow();
 }
 
 void FerretLayer::OnEvent(Event &e) {

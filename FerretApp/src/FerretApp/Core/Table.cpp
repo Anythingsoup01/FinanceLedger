@@ -123,19 +123,22 @@ AccountTable::AccountTable(const std::string &accountName, const int &accountNum
 }
 
 void InsertTableEntryHelper(EntryTable_t *table, const Date_t &date, const int &accountID, const float &amount) {
-  (*table->GetDateBuffer()) = date;
-  (*table->GetAccountIDBuffer()) = accountID;
-  (*table->GetAmountBuffer()) = amount;
+  *(table->GetDateBuffer()) = date;
+  *(table->GetAccountIDBuffer()) = accountID;
+  *(table->GetAmountBuffer()) = amount;
+  table->InsertEntryData();
+
+  memset(table->GetDateBuffer(), 0, sizeof(Date_t));
+  memset(table->GetAccountIDBuffer(), 0, sizeof(int));
+  memset(table->GetAmountBuffer(), 0, sizeof(float));
 }
 
 void AccountTable::InsertDebitEntry(const Date_t &date, const int &accountID, const float &amount) {
   InsertTableEntryHelper(&m_DebitTable, date, accountID, amount);
-  m_DebitTable.InsertEntryData();
 }
 
 void AccountTable::InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount) {
   InsertTableEntryHelper(&m_CreditTable, date, accountID, amount);
-  m_CreditTable.InsertEntryData();
 }
 
 void AccountTable::Draw() {
