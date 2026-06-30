@@ -38,15 +38,24 @@ private:
 
 typedef struct EntryTable {
 public:
-  EntryTable();
+  EntryTable(int accountID, bool creditTable);
 
-  // This utilizes the buffers found in the private fields and adds the
-  // date (month + day + year) + the account id as a key for the entry map
+  // This utilizes the buffers found in the private fields, adds the
+  // date (month + day + year) + the account id as a key for the entry map and
+  // automatically updates the appropriate table entry
   //
   // Returns false when trying to overlap entries, ie. same date and account.
   // If you want to utilize this as an overwrite use OverwriteEntryData,
   // else, if you want to add to the already existing entry, use InsertSumEntryData.
   bool InsertEntryData();
+
+  // Manual insertion of data used for the serializer and to automatically add entries
+  // to other tables without causing a recursion loop
+  //
+  // Returns false when trying to overlap entries, ie. same date and account.
+  // If you want to utilize this as an overwrite use OverwriteEntryData,
+  // else, if you want to add to the already existing entry, use InsertSumEntryData.
+  bool InsertEntryData(const Date_t &date, const int &accountID, const float &amount);
 
   // This utilizes the buffers found in the private fields and preserves
   // the location in the map.
@@ -88,8 +97,10 @@ private:
   int m_AccountIDBuffer;
   float m_AmountBuffer;
 
-  std::map<int, EntryData_t> m_Entries; // Holds all entries
+  int m_AccountID;
   float m_TotalValue; // Holds the total value (positive)
+  bool m_CreditTable; // Used to determine which entry table from which account to automatically update
+  std::map<int, EntryData_t> m_Entries; // Holds all entries
 } EntryTable_t;
 
 // This class will essentially contain all the account data
@@ -103,12 +114,12 @@ public:
   // Used to retrieve the Debit EntryTable_t as a const pointer
   const EntryTable_t *GetDebitTable() const { return &m_DebitTable; }
   // Used to externally add an entry to the table, used with the serializer and (going to be used) with automatic entry insertion
-  void InsertDebitEntry(const Date_t &date, const int &accountID, const float &amount);
+  void InsertDebitEntry(const Date_t &date, const int &accountID, const float &amount, bool updateOther);
 
   // Used to retrieve the Credit EntryTable_t as a const pointer
   const EntryTable_t *GetCreditTable() const { return &m_CreditTable; }
   // Used to externally add an entry to the table, used with the serializer and (going to be used) with automatic entry insertion
-  void InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount);
+  void InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount, bool updateOther);
 
   const int &GetAccountNumber() const { return m_Number; }
   const std::string &GetName() const { return m_Name; }
@@ -123,6 +134,13 @@ public:
 
   // This will get the Next variable
   inline AccountTable *GetNext() { return m_Next; }
+
+  // Used by the renderer to size the Add Table button
+  inline float GetGenericTableHeight() { return m_EntryHeight * 7; }
+
+  // Used by the renderer to size the Add Table button
+  inline float GetGenericTableWidth() { return m_EntryWidth * 2; }
+
 private:
   // Used by both Draw and DrawIndividual to actually render the table
   void DrawHelper();
@@ -140,7 +158,7 @@ private:
   float m_MaxTableWidth = -1;   // Holds the maximum table width
   float m_EntryHeight = -1;     // Used to increment m_MaxTableHeight
   float m_EntryWidth = -1;      // Used to set m_MaxTableWidth
-  AccountTable *m_Next = nullptr; // Used to get the next table id (for now); TODO: Handle the deletion of a table, m_Next could be pointing to garbage
+  AccountTable *m_Next = nullptr; // Used to get the next table id (for now);
 };
 
 }

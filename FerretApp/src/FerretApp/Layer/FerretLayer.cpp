@@ -6,6 +6,7 @@ namespace Ferret {
 
 
 void FerretLayer::OnAttach() {
+  s_Instance = this;
   DeserializeTables();
 }
 
@@ -25,6 +26,8 @@ void FerretLayer::OnDetach() {
 
   std::ofstream fout("test.yaml");
   fout << out.c_str();
+
+  s_Instance = nullptr;
 }
 
 void FerretLayer::OnUpdate() {}
@@ -37,13 +40,85 @@ void FerretLayer::OnUIRender() {
   ImGui::Begin("Full Screen", nullptr, wflags);
 
   for (auto &[id, table] : m_Tables) {
+    ImGui::PushID(id);
     table.Draw();
-    if (table.GetNext() && table.GetNext()->GetAccountNumber() - id < 100) { // Within the same block
-      ImGui::SameLine();
-    }
-  }
+    ImGui::SameLine();
+    if (!table.GetNext() || !(table.GetNext()->GetAccountNumber() - id < 100)) { // Within the same block; TODO: Let users define this block
+      ImVec2 genericTableSize(table.GetGenericTableWidth(), table.GetGenericTableHeight());
+      if (ImGui::Button("Add Table", genericTableSize))
+        m_RenderCreateTable = true;
 
+      if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Used to create a new table either in the row or in the first column");
+    }
+    ImGui::PopID();
+  }
   ImGui::End();
+
+  if (m_RenderCreateTable) {
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+    // Sets the window size to be a third of the application window size
+    float windowSizeX = viewport->Size.x / 3.0f;
+    float windowSizeY = viewport->Size.y / 3.0f;
+
+    // Puts to window in the center of the application window
+    float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
+    float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
+
+    ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
+    ImGui::SetNextWindowPos(ImVec2(windowSizeX, windowSizeY));
+    ImGui::Begin("Create New Table", &m_RenderCreateTable, flags);
+
+    static char accountName[32] = {0};
+    static int accountNumber = 0;
+    static bool isCredit = false;
+
+    ImGui::Text("Account Name");
+    ImGui::SameLine();
+    ImGui::InputText("##accName", accountName, sizeof(accountName));
+
+    ImGui::Text("Account Number");
+    ImGui::SameLine();
+    ImGui::DragInt("##accNum", &accountNumber, 0, 0, 0, "%03d");
+
+    ImGui::Text("Is Credit Account");
+    ImGui::SameLine();
+    ImGui::Checkbox("##isCredit", &isCredit);
+
+    bool disabled = false;
+
+    if (m_Tables.find(accountNumber) != m_Tables.end() || accountNumber == 0) { // account already exists
+      ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Pure Red (Normal)
+      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Lighter Red (Hovered)
+      ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.0f, 0.0f, 1.0f)); // Darker Red (Clicked)
+      disabled = true;
+    }
+
+    ImGui::BeginDisabled(disabled);
+
+    if (ImGui::Button("Confirm")) {
+      AccountTable table(accountName, accountNumber, isCredit);
+      m_Tables.emplace(std::pair<int, AccountTable>(accountNumber, table));
+      ReloadTables();
+      m_RenderCreateTable = false;
+    }
+
+    ImGui::EndDisabled();
+
+    if (disabled)
+      ImGui::PopStyleColor(3);
+
+    ImGui::End();
+  }
+}
+
+void FerretLayer::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date_t &date, const int &fromTable, const float &amount) {
+  auto &table = m_Tables.at(toTable);
+  if (isCredit) {
+    table.InsertDebitEntry(date, fromTable, amount, false);
+  } else {
+    table.InsertCreditEntry(date, fromTable, amount, false);
+  }
 }
 
 void FerretLayer::OnEvent(Event &e) {
@@ -130,7 +205,7 @@ bool FerretLayer::DeserializeTables() {
       );
       int accountId = entry["AccountID"].as<int>();
       float amount = entry["Amount"].as<float>();
-      accountTable.InsertDebitEntry(date, accountId, amount);
+      accountTable.InsertDebitEntry(date, accountId, amount, false);
     }
     auto creditEntries = account["CreditEntries"];
     for (auto entry : creditEntries) {
@@ -141,7 +216,7 @@ bool FerretLayer::DeserializeTables() {
       );
       int accountId = entry["AccountID"].as<int>();
       float amount = entry["Amount"].as<float>();
-      accountTable.InsertCreditEntry(date, accountId, amount);
+      accountTable.InsertCreditEntry(date, accountId, amount, false);
     }
     m_Tables.emplace(std::pair<int, AccountTable>(accountNum, accountTable));
     if (prevId != -1) {
@@ -151,6 +226,18 @@ bool FerretLayer::DeserializeTables() {
   }
 
   return true;
+}
+
+void FerretLayer::ReloadTables() {
+  m_TableNames.clear();
+  int prevID = -1;
+  for (auto &[id, table] : m_Tables) {
+    table.SetNext(nullptr);
+    if (prevID != -1) {
+      m_Tables.at(prevID).SetNext(&table);
+    }
+    prevID = id;
+  }
 }
 
 } // namespace Ferret

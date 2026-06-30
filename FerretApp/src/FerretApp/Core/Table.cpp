@@ -1,4 +1,5 @@
 #include "Table.h"
+#include "FerretApp/Layer/FerretLayer.h"
 
 #include <imgui.h>
 
@@ -36,8 +37,8 @@ bool HoveredAndEntered() {
 //  EntryTable //
 ////////////////
 
-EntryTable::EntryTable()
-  : m_DateBuffer({0,0,0}), m_AccountIDBuffer(0), m_AmountBuffer(0), m_TotalValue(0) {}
+EntryTable::EntryTable(int accountID, bool creditTable)
+  : m_DateBuffer({0,0,0}), m_AccountIDBuffer(0), m_AmountBuffer(0), m_TotalValue(0), m_AccountID(accountID), m_CreditTable(creditTable) {}
 
 bool EntryTable::InsertEntryData() {
   // The ID is to allow users to click and edit the entry
@@ -56,8 +57,33 @@ bool EntryTable::InsertEntryData() {
   EntryData_t data = {m_DateBuffer, m_AccountIDBuffer, m_AmountBuffer};
   m_Entries.emplace(std::pair<int, EntryData_t>(id, data));
 
+  FerretLayer::Get()->SubmitEntryDataToTable(m_AccountIDBuffer, m_CreditTable, m_DateBuffer, m_AccountID, m_AmountBuffer);
+
   // Increment the total value of the table
   m_TotalValue += m_AmountBuffer;
+
+  return true;
+}
+
+bool EntryTable::InsertEntryData(const Date_t &date, const int &accountID, const float &amount) {
+  // The ID is to allow users to click and edit the entry
+  if (date.Day == 0 || date.Month == 0 || date.Year == 0 ||
+      accountID == 0 || amount == 0) {
+    return false;
+  }
+  int id = date.Day + date.Month + date.Year + accountID;
+
+  // Entry already exists
+  if (m_Entries.find(id) != m_Entries.end()) {
+    return false;
+  }
+
+  // Insert the new data to the table
+  EntryData_t data = {date, accountID, amount};
+  m_Entries.emplace(std::pair<int, EntryData_t>(id, data));
+
+  // Increment the total value of the table
+  m_TotalValue += amount;
 
   return true;
 }
@@ -119,7 +145,7 @@ void EntryTable::RemoveEntryData(int id) {
 ////////////////
 
 AccountTable::AccountTable(const std::string &accountName, const int &accountNumber, const bool &isCredit)
-  : m_Name(accountName), m_Number(accountNumber), m_CreditAccount(isCredit) {
+  : m_Name(accountName), m_Number(accountNumber), m_CreditAccount(isCredit), m_DebitTable(accountNumber, false), m_CreditTable(accountNumber, true) {
 }
 
 void InsertTableEntryHelper(EntryTable_t *table, const Date_t &date, const int &accountID, const float &amount) {
@@ -133,12 +159,20 @@ void InsertTableEntryHelper(EntryTable_t *table, const Date_t &date, const int &
   memset(table->GetAmountBuffer(), 0, sizeof(float));
 }
 
-void AccountTable::InsertDebitEntry(const Date_t &date, const int &accountID, const float &amount) {
-  InsertTableEntryHelper(&m_DebitTable, date, accountID, amount);
+void AccountTable::InsertDebitEntry(const Date_t &date, const int &accountID, const float &amount, bool updateOther) {
+  if (updateOther) {
+    InsertTableEntryHelper(&m_DebitTable, date, accountID, amount);
+  } else {
+    m_DebitTable.InsertEntryData(date, accountID, amount);
+  }
 }
 
-void AccountTable::InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount) {
-  InsertTableEntryHelper(&m_CreditTable, date, accountID, amount);
+void AccountTable::InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount, bool updateOther) {
+  if (updateOther) {
+    InsertTableEntryHelper(&m_CreditTable, date, accountID, amount);
+  } else {
+    m_CreditTable.InsertEntryData(date, accountID, amount);
+  }
 }
 
 void AccountTable::Draw() {
@@ -210,7 +244,30 @@ void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, cons
     ImGui::TableSetColumnIndex(1);
     ImGui::SetNextItemWidth(-FLT_MIN);
     sprintf(buf, "##NewAcc%s", tableName);
-    ImGui::DragInt(buf, table->GetAccountIDBuffer(), 0, 0);
+    auto &tables = FerretLayer::Get()->GetTables();
+    char accBuf[32] = { 0 };
+    int *idBuffer = table->GetAccountIDBuffer();
+    snprintf(accBuf, sizeof(accBuf), "%i", (*idBuffer) != 0 ? tables.at((*idBuffer)).GetAccountNumber() : 0);
+    if (ImGui::BeginCombo(buf, accBuf)) {
+      for (auto &[id, table] : tables) {
+        if (id == m_Number) { // We can't add or remove money into the same account
+          continue;
+        }
+        const bool is_selected = (*idBuffer == id);
+        char buf[32] = { 0 };
+        snprintf(buf, sizeof(buf), "%i", table.GetAccountNumber());
+        if (ImGui::Selectable(buf, is_selected)) {
+          *idBuffer = id;
+        }
+
+        // Set the initial focus when opening the combo (keyboard navigation)
+        if (is_selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+
     if (Utils::HoveredAndEntered()) {
       submitted = true;
     }
