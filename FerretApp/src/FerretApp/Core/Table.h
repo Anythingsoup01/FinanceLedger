@@ -1,5 +1,7 @@
 #pragma once
 
+#include <imgui.h>
+
 namespace Ferret {
 
 typedef struct Date {
@@ -125,12 +127,6 @@ public:
   // This will get the Next variable
   inline AccountTable *GetNext() { return m_Next; }
 
-  // Used by the renderer to size the Add Table button
-  inline float GetGenericTableHeight() { return m_EntryHeight * 7; }
-
-  // Used by the renderer to size the Add Table button
-  inline float GetGenericTableWidth() { return m_EntryWidth * 2; }
-
 private:
   // Used by both Draw and DrawIndividual to actually render the table
   void DrawHelper();
@@ -138,16 +134,16 @@ private:
   // Used to draw the entries tables
   void DrawSubTable(EntryTable_t *table, const char *tableName, const int &tableIndex);
   void DrawSubTableTotal(EntryTable_t *table, const char *tableName, const int &tableIndex);
+
+  // This is used internally to set the table height to the largest subTable height
+  void ResizeTable();
 private:
   int m_Number;                 // Must be unique
   std::string m_Name;           // Will display in Account Dropdown
   bool m_CreditAccount;         // If this is true then the final calculation for will be credit - debit, otherwise debit - credit
   EntryTable_t m_DebitTable;    // Holds all debit entries and value
   EntryTable_t m_CreditTable;   // Holds all credit entries and value
-  float m_MaxTableHeight = -1;  // Holds the height of the table from very top to very bottom
-  float m_MaxTableWidth = -1;   // Holds the maximum table width
-  float m_EntryHeight = -1;     // Used to increment m_MaxTableHeight
-  float m_EntryWidth = -1;      // Used to set m_MaxTableWidth
+  ImVec2 m_TableSize;           // Holds the current size of the table
   AccountTable *m_Next = nullptr; // Used to get the next table id (for now);
 };
 

@@ -2,8 +2,41 @@
 #include "Ferret.h"
 #include "imgui.h"
 
+ImVec2 g_EntrySize {0,0};
+ImVec2 g_GenericTableSize {0,0};
+
 namespace Ferret {
 
+namespace Utils {
+
+// Returns the digit count; Used for account sorting
+int GetPositiveDigitCount(const int &val) {
+  int digits = 0;
+  int tmp = val;
+  while (true) {
+    if (tmp < 10 && tmp > 0) {
+      digits++;
+      break;
+    }
+    digits++;
+    tmp /= 10;
+  }
+  return digits;
+}
+
+// Gets the very first int from a val; val = 123 : return 1
+int GetTopDigit(const int &val) {
+  int tmp = val;
+  while (true) {
+    if (tmp < 10 && tmp > 0) {
+      break;
+    }
+    tmp /= 10;
+  }
+  return tmp;
+}
+
+}
 
 void FerretLayer::OnAttach() {
   s_Instance = this;
@@ -38,13 +71,27 @@ void FerretLayer::OnUIRender() {
   ImGuiWindowFlags wflags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
   ImGui::Begin("Full Screen", nullptr, wflags);
 
+  if (g_EntrySize.x >= 0) {
+    g_EntrySize = ImGui::CalcTextSize("##/##/####|##########|##########");
+    g_GenericTableSize = ImVec2(g_EntrySize.x * 2.0f, g_EntrySize.y * 7.0f);
+  }
+
+  if (m_Tables.empty()) {
+    if (ImGui::Button("Add Table", g_GenericTableSize))
+      m_RenderCreateTable = true;
+
+    if (ImGui::IsItemHovered())
+      ImGui::SetTooltip("Used to create a new table either in the row or in the first column");
+  }
+
   for (auto &[id, table] : m_Tables) {
     ImGui::PushID(id);
     table.Draw();
     ImGui::SameLine();
-    if (!table.GetNext() || !(table.GetNext()->GetAccountNumber() - id < 100)) { // Within the same block; TODO: Let users define this block
-      ImVec2 genericTableSize(table.GetGenericTableWidth(), table.GetGenericTableHeight());
-      if (ImGui::Button("Add Table", genericTableSize))
+    if (!table.GetNext() ||
+        Utils::GetPositiveDigitCount(id) != Utils::GetPositiveDigitCount(table.GetNext()->GetAccountNumber()) ||
+        Utils::GetTopDigit(id) != Utils::GetTopDigit(table.GetNext()->GetAccountNumber())) { // Within the same block
+      if (ImGui::Button("Add Table", g_GenericTableSize))
         m_RenderCreateTable = true;
 
       if (ImGui::IsItemHovered())

@@ -1,7 +1,7 @@
 #include "Table.h"
 #include "FerretApp/Layer/FerretLayer.h"
 
-#include <imgui.h>
+extern ImVec2 g_EntrySize;
 
 namespace Ferret {
 
@@ -147,24 +147,17 @@ void AccountTable::InsertCreditEntry(const Date_t &date, const int &accountID, c
 }
 
 void AccountTable::Draw() {
-  if (m_EntryHeight <= 0) {
-    ImVec2 entrySize = ImGui::CalcTextSize("##/##/####|##########|##########");
-    m_EntryHeight = entrySize.y;
-    m_EntryWidth = entrySize.x;
-
-    // The initial height is just the root title, debit/credit title, and 
-    // sub table title + 1 for adding entries; Notice we don't include the total
-    // to this!
-    m_MaxTableHeight = entrySize.y * 4.0f;
-    m_MaxTableWidth = entrySize.x * 2.0f;
-  }
   // Since this draws normally, all we need is the helper
+  if (m_TableSize.x == 0 || m_TableSize.y == 0) {
+    ResizeTable();
+  }
+
   DrawHelper();
 }
 
 void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, const int &tableIndex) {
-  // Sets the table size to be equal to the size of the table minus the above 2 headers
-  ImVec2 tableSize = ImVec2(m_EntryWidth, m_MaxTableHeight - (m_EntryHeight * 2));
+  // Sizing the table based on it's item count
+  ImVec2 tableSize = ImVec2(g_EntrySize.x, g_EntrySize.y * table->GetEntries().size());
   ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
 
   ImGui::TableSetColumnIndex(tableIndex);
@@ -253,6 +246,7 @@ void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, cons
       memset(table->GetDateBuffer(), 0, sizeof(Date_t));
       memset(table->GetAccountIDBuffer(), 0, sizeof(int));
       memset(table->GetAmountBuffer(), 0, sizeof(float));
+      ResizeTable();
     }
 
     ImGui::EndTable();
