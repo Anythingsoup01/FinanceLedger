@@ -31,6 +31,13 @@ bool HoveredAndEntered() {
   return ImGui::IsItemHovered() && (ImGui::IsKeyDown(ImGuiKey_Enter) || ImGui::IsKeyDown(ImGuiKey_KeypadEnter));
 }
 
+bool IsSubitted() {
+  if (!ImGui::IsItemActive())
+    return false;
+
+  return ImGui::IsKeyDown(ImGuiKey_Enter) || ImGui::IsKeyDown(ImGuiKey_KeypadEnter);
+}
+
 }
 
 //////////////////
@@ -40,32 +47,7 @@ bool HoveredAndEntered() {
 EntryTable::EntryTable(int accountID, bool creditTable)
   : m_DateBuffer({0,0,0}), m_AccountIDBuffer(0), m_AmountBuffer(0), m_TotalValue(0), m_AccountID(accountID), m_CreditTable(creditTable) {}
 
-bool EntryTable::InsertEntryData() {
-  // The ID is to allow users to click and edit the entry
-  if (m_DateBuffer.Day == 0 || m_DateBuffer.Month == 0 || m_DateBuffer.Year == 0 ||
-      m_AccountIDBuffer == 0 || m_AmountBuffer == 0) {
-    return false;
-  }
-  int id = m_DateBuffer.Day + m_DateBuffer.Month + m_DateBuffer.Year + m_AccountIDBuffer;
-
-  // Entry already exists
-  if (m_Entries.find(id) != m_Entries.end()) {
-    return false;
-  }
-
-  // Insert the new data to the table
-  EntryData_t data = {m_DateBuffer, m_AccountIDBuffer, m_AmountBuffer};
-  m_Entries.emplace(std::pair<int, EntryData_t>(id, data));
-
-  FerretLayer::Get()->SubmitEntryDataToTable(m_AccountIDBuffer, m_CreditTable, m_DateBuffer, m_AccountID, m_AmountBuffer);
-
-  // Increment the total value of the table
-  m_TotalValue += m_AmountBuffer;
-
-  return true;
-}
-
-bool EntryTable::InsertEntryData(const Date_t &date, const int &accountID, const float &amount) {
+bool EntryTable::InsertEntryData(const Date_t &date, const int &accountID, const float &amount, bool updateOther) {
   // The ID is to allow users to click and edit the entry
   if (date.Day == 0 || date.Month == 0 || date.Year == 0 ||
       accountID == 0 || amount == 0) {
@@ -81,6 +63,9 @@ bool EntryTable::InsertEntryData(const Date_t &date, const int &accountID, const
   // Insert the new data to the table
   EntryData_t data = {date, accountID, amount};
   m_Entries.emplace(std::pair<int, EntryData_t>(id, data));
+
+  if (updateOther)
+    FerretLayer::Get()->SubmitEntryDataToTable(m_AccountIDBuffer, m_CreditTable, m_DateBuffer, m_AccountID, m_AmountBuffer);
 
   // Increment the total value of the table
   m_TotalValue += amount;
@@ -145,34 +130,20 @@ void EntryTable::RemoveEntryData(int id) {
 ////////////////
 
 AccountTable::AccountTable(const std::string &accountName, const int &accountNumber, const bool &isCredit)
-  : m_Name(accountName), m_Number(accountNumber), m_CreditAccount(isCredit), m_DebitTable(accountNumber, false), m_CreditTable(accountNumber, true) {
-}
-
-void InsertTableEntryHelper(EntryTable_t *table, const Date_t &date, const int &accountID, const float &amount) {
-  *(table->GetDateBuffer()) = date;
-  *(table->GetAccountIDBuffer()) = accountID;
-  *(table->GetAmountBuffer()) = amount;
-  table->InsertEntryData();
-
-  memset(table->GetDateBuffer(), 0, sizeof(Date_t));
-  memset(table->GetAccountIDBuffer(), 0, sizeof(int));
-  memset(table->GetAmountBuffer(), 0, sizeof(float));
+  : m_Name(accountName),
+    m_Number(accountNumber),
+    m_CreditAccount(isCredit),
+    m_DebitTable(accountNumber, false),
+    m_CreditTable(accountNumber, true) {
+  ResizeTable();
 }
 
 void AccountTable::InsertDebitEntry(const Date_t &date, const int &accountID, const float &amount, bool updateOther) {
-  if (updateOther) {
-    InsertTableEntryHelper(&m_DebitTable, date, accountID, amount);
-  } else {
-    m_DebitTable.InsertEntryData(date, accountID, amount);
-  }
+  m_DebitTable.InsertEntryData(date, accountID, amount, updateOther);
 }
 
 void AccountTable::InsertCreditEntry(const Date_t &date, const int &accountID, const float &amount, bool updateOther) {
-  if (updateOther) {
-    InsertTableEntryHelper(&m_CreditTable, date, accountID, amount);
-  } else {
-    m_CreditTable.InsertEntryData(date, accountID, amount);
-  }
+  m_CreditTable.InsertEntryData(date, accountID, amount, updateOther);
 }
 
 void AccountTable::Draw() {
@@ -223,20 +194,21 @@ void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, cons
     bool submitted = false;
 
     ImGui::TableSetColumnIndex(0);
+    Date_t *dateBuffer = table->GetDateBuffer();
     float inputWidth = ImGui::GetColumnWidth() / 3.f;
     ImGui::PushItemWidth(inputWidth);
-    ImGui::DragInt("##M", &table->GetDateBuffer()->Month, 0, 0, 0, "%02d");
-    if (Utils::HoveredAndEntered()) {
+    ImGui::DragInt("##M", &dateBuffer->Month, 0, 0, 0, "%02d");
+    if (Utils::IsSubitted()) {
       submitted = true;
     }
     ImGui::SameLine(inputWidth);
-    ImGui::DragInt("##D", &table->GetDateBuffer()->Day, 0, 0, 0, "%02d");
-    if (Utils::HoveredAndEntered()) {
+    ImGui::DragInt("##D", &dateBuffer->Day, 0, 0, 0, "%02d");
+    if (Utils::IsSubitted()) {
       submitted = true;
     }
-    ImGui::SameLine((inputWidth * 2) + 1);
-    ImGui::DragInt("##Y", &table->GetDateBuffer()->Year, 0, 0, 0, "%04d");
-    if (Utils::HoveredAndEntered()) {
+    ImGui::SameLine((inputWidth * 2));
+    ImGui::DragInt("##Y", &dateBuffer->Year, 0, 0, 0, "%04d");
+    if (Utils::IsSubitted()) {
       submitted = true;
     }
     ImGui::PopItemWidth();
@@ -268,23 +240,19 @@ void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, cons
       ImGui::EndCombo();
     }
 
-    if (Utils::HoveredAndEntered()) {
-      submitted = true;
-    }
-
     ImGui::TableSetColumnIndex(2);
     ImGui::SetNextItemWidth(-FLT_MIN);
     sprintf(buf, "##NewAmt%s", tableName);
-    ImGui::DragFloat(buf, table->GetAmountBuffer(), 0, 0, 0, "$%.2f");
-    if (Utils::HoveredAndEntered()) {
+    float *amountBuffer = table->GetAmountBuffer();
+    ImGui::DragFloat(buf, amountBuffer, 0, 0, 0, "$%.2f");
+    if (Utils::IsSubitted()) {
       submitted = true;
     }
 
-    if (submitted && table->InsertEntryData()) {
+    if (submitted && table->InsertEntryData(*dateBuffer, *idBuffer, *amountBuffer, true)) {
       memset(table->GetDateBuffer(), 0, sizeof(Date_t));
       memset(table->GetAccountIDBuffer(), 0, sizeof(int));
       memset(table->GetAmountBuffer(), 0, sizeof(float));
-      m_MaxTableHeight += m_EntryHeight; // Dynamically increment table height
     }
 
     ImGui::EndTable();
@@ -297,9 +265,9 @@ void AccountTable::DrawSubTableTotal(EntryTable_t *table, const char *tableName,
 
   char buf[32];
   sprintf(buf, "##%s-%i", tableName, m_Number);
-  if (ImGui::BeginTable(buf, 2, flags, ImVec2(m_EntryWidth, m_EntryHeight))) {
-    ImGui::TableSetupColumn("##TotalTxt", ImGuiTableColumnFlags_WidthFixed, (m_EntryWidth * 2) / 3.0) ;
-    ImGui::TableSetupColumn("##Amount", ImGuiTableColumnFlags_WidthFixed, m_EntryWidth / 3.0);
+  if (ImGui::BeginTable(buf, 2, flags, g_EntrySize)) {
+    ImGui::TableSetupColumn("##TotalTxt", ImGuiTableColumnFlags_WidthFixed, (g_EntrySize.x * 2) / 3.0) ;
+    ImGui::TableSetupColumn("##Amount", ImGuiTableColumnFlags_WidthFixed, g_EntrySize.x / 3.0);
 
     ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
     ImGui::TableSetColumnIndex(0);
@@ -340,18 +308,18 @@ void AccountTable::DrawHelper() {
 
   char buf[32] = {0};
   snprintf(buf, sizeof(buf), "##%s-%i-root", m_Name.c_str(), m_Number);
-  ImVec2 tableSize = ImVec2(m_MaxTableWidth, m_MaxTableHeight);
-  if (ImGui::BeginTable(buf, 1, flags, tableSize)) {
+  if (ImGui::BeginTable(buf, 1, flags, m_TableSize)) {
 
     sprintf(buf, "%s (%i)", m_Name.c_str(), m_Number);
-    ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, tableSize.x);
+    ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, m_TableSize.x);
     Utils::HeaderCentered(1);
 
     ImGui::TableNextRow();
 
     ImGui::TableSetColumnIndex(0);
 
-    tableSize.y -= m_EntryHeight;
+    // Current table height - one entry; to account for main table
+    ImVec2 tableSize = ImVec2(m_TableSize.x, m_TableSize.y - g_EntrySize.y);
 
     snprintf(buf, sizeof(buf), "##%s-%i-entries", m_Name.c_str(), m_Number);
     if (ImGui::BeginTable(buf, 2, flags, tableSize)) {
@@ -378,7 +346,7 @@ void AccountTable::DrawHelper() {
     ImGui::TableSetColumnIndex(0);
 
     snprintf(buf, sizeof(buf), "##%s-%i-balance", m_Name.c_str(), m_Number);
-    if (ImGui::BeginTable(buf, 2, flags, ImVec2(m_MaxTableWidth, m_EntryHeight))) {
+    if (ImGui::BeginTable(buf, 2, flags, ImVec2(m_TableSize.x, g_EntrySize.y))) {
       ImGui::TableSetupColumn("##Balance", ImGuiTableColumnFlags_WidthFixed, tableSize.x * 0.67);
       ImGui::TableSetupColumn("##Amount", ImGuiTableColumnFlags_WidthFixed, tableSize.x * 0.33);
 
@@ -418,7 +386,17 @@ void AccountTable::DrawHelper() {
     ImGui::EndTable();
   }
   ImGui::PopStyleVar();
+}
 
+void AccountTable::ResizeTable() {
+  float creditTableSize = m_CreditTable.GetEntries().size();
+  float debitTableSize = m_DebitTable.GetEntries().size();
+  m_TableSize = ImVec2(
+    g_EntrySize.x * 2.0f,
+    creditTableSize > debitTableSize
+    ? g_EntrySize.y * (creditTableSize + 4)
+    : g_EntrySize.y * (debitTableSize + 4)
+  );
 }
 
 }

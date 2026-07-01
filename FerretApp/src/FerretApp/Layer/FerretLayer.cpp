@@ -10,7 +10,6 @@ void FerretLayer::OnAttach() {
   DeserializeTables();
 }
 
-
 void FerretLayer::OnDetach() {
   YAML::Emitter out;
 
@@ -100,6 +99,9 @@ void FerretLayer::OnUIRender() {
       AccountTable table(accountName, accountNumber, isCredit);
       m_Tables.emplace(std::pair<int, AccountTable>(accountNumber, table));
       ReloadTables();
+      memset(accountName, 0, sizeof(accountName));
+      memset(&accountNumber, 0, sizeof(int));
+      memset(&isCredit, 0, sizeof(bool));
       m_RenderCreateTable = false;
     }
 

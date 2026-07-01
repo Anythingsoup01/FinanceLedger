@@ -40,22 +40,12 @@ typedef struct EntryTable {
 public:
   EntryTable(int accountID, bool creditTable);
 
-  // This utilizes the buffers found in the private fields, adds the
-  // date (month + day + year) + the account id as a key for the entry map and
-  // automatically updates the appropriate table entry
+  // Inserts a new data entry and optionally updates the referenced table.
   //
   // Returns false when trying to overlap entries, ie. same date and account.
   // If you want to utilize this as an overwrite use OverwriteEntryData,
   // else, if you want to add to the already existing entry, use InsertSumEntryData.
-  bool InsertEntryData();
-
-  // Manual insertion of data used for the serializer and to automatically add entries
-  // to other tables without causing a recursion loop
-  //
-  // Returns false when trying to overlap entries, ie. same date and account.
-  // If you want to utilize this as an overwrite use OverwriteEntryData,
-  // else, if you want to add to the already existing entry, use InsertSumEntryData.
-  bool InsertEntryData(const Date_t &date, const int &accountID, const float &amount);
+  bool InsertEntryData(const Date_t &date, const int &accountID, const float &amount, bool updateOther);
 
   // This utilizes the buffers found in the private fields and preserves
   // the location in the map.
