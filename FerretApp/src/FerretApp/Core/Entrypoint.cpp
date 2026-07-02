@@ -6,6 +6,7 @@
 Ferret::Application *Ferret::CreateApplication(int argc, char **argv) {
   Ferret::ApplicationSpecifications spec;
   spec.Title = "Ferret Example";
+  spec.ClientControlsExitEvent = true;
 
   Ferret::Application *app = new Ferret::Application(spec);
 
