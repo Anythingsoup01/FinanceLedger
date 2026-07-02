@@ -193,9 +193,10 @@ void FerretLayer::SerializeTables(YAML::Emitter &out, AccountTable *table) {
 bool FerretLayer::Deserialize() {
   YAML::Node data;
   try {
-    data = YAML::LoadFile("test.yaml");
-  } catch (YAML::ParserException &ex) {
+    data = YAML::LoadFile("test1.yaml");
+  } catch (std::exception &ex) {
     FE_CLI_ERROR("Failed to load test.yaml file '{0}'", ex.what());
+    m_Tables = {};
     return false;
   }
 
