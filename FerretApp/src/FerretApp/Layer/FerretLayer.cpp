@@ -243,6 +243,19 @@ void FerretLayer::ReloadTables() {
 }
 
 bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
+  bool ctrl = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+
+  switch (e.GetKeyCode()) {
+
+    case KeyCode::S: {
+      if (!ctrl) break;
+      Serialize();
+      m_ContextDirty = false;
+      break;
+    }
+
+    default: break;
+  }
   return false;
 }
 
