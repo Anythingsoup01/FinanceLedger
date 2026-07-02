@@ -5,3 +5,5 @@ add_subdirectory(Ferret)
 
 add_subdirectory(FerretApp)
 
+add_subdirectory(vendor)
+
