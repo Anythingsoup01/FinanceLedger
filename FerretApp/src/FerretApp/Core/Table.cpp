@@ -27,12 +27,8 @@ void HeaderCentered(uint32_t columnCount) {
   }
 }
 
-bool HoveredAndEntered() {
-  return ImGui::IsItemHovered() && (ImGui::IsKeyDown(ImGuiKey_Enter) || ImGui::IsKeyDown(ImGuiKey_KeypadEnter));
-}
-
 bool IsSubitted() {
-  if (!ImGui::IsItemActive())
+  if (!ImGui::IsItemHovered())
     return false;
 
   return ImGui::IsKeyDown(ImGuiKey_Enter) || ImGui::IsKeyDown(ImGuiKey_KeypadEnter);
