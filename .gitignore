@@ -1,3 +1,10 @@
-
-build
+## Binaries
 prebuild
+
+## Directories
+build/
+profiler/
+
+## Files
+imgui.ini
+test.yaml
