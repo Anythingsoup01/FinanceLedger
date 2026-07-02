@@ -97,7 +97,6 @@ void FerretLayer::OnUIRender() {
     }
     default: break;
   }
-
 }
 
 void FerretLayer::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date_t &date, const int &fromTable, const float &amount) {
@@ -107,6 +106,21 @@ void FerretLayer::SubmitEntryDataToTable(const int &toTable, const bool &isCredi
   } else {
     table.InsertCreditEntry(date, fromTable, amount, false);
   }
+}
+
+
+
+void FerretLayer::RemoveTable(const int &tableID) {
+  Application::Get().SubmitToMainThread([this, tableID](){
+    for (auto &[id, table] : m_Tables) {
+      if (id == tableID) continue;
+      table.RemoveEntriesFromTable(tableID);
+    }
+
+    m_Tables.erase(tableID);
+    ReloadTables();
+    m_ContextDirty = true;
+  });
 }
 
 void FerretLayer::OnEvent(Event &e) {

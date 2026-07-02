@@ -9,8 +9,7 @@ namespace Utils {
 
 void HeaderCentered(uint32_t columnCount) {
   ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-  for (int column = 0; column < columnCount; column++) 
-  {
+  for (int column = 0; column < columnCount; column++) {
     ImGui::TableSetColumnIndex(column);
     const char* header_name = ImGui::TableGetColumnName(column);
 
@@ -121,6 +120,17 @@ void EntryTable::RemoveEntryData(int id) {
   m_Entries.erase(id);
 }
 
+void EntryTable::RemoveEntriesFromTable(const int &tableID) {
+  for (auto it = m_Entries.begin(); it != m_Entries.end();) {
+    if (it->second.GetAccountID() == tableID) {
+      m_TotalValue -= it->second.GetAmount();
+      it = m_Entries.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
 //////////////////
 /////////////////
 ////////////////
@@ -131,7 +141,6 @@ AccountTable::AccountTable(const std::string &accountName, const int &accountNum
     m_CreditAccount(isCredit),
     m_DebitTable(accountNumber, false),
     m_CreditTable(accountNumber, true) {
-  ResizeTable();
 }
 
 void AccountTable::InsertDebitEntry(const Date_t &date, const int &accountID, const float &amount, bool updateOther) {
@@ -149,6 +158,11 @@ void AccountTable::Draw() {
   }
 
   DrawHelper();
+}
+
+void AccountTable::RemoveEntriesFromTable(const int &tableID) {
+  m_CreditTable.RemoveEntriesFromTable(tableID);
+  m_DebitTable.RemoveEntriesFromTable(tableID);
 }
 
 void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, const int &tableIndex) {
@@ -303,7 +317,33 @@ void AccountTable::DrawHelper() {
 
     sprintf(buf, "%s (%i)", m_Name.c_str(), m_Number);
     ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, m_TableSize.x);
-    Utils::HeaderCentered(1);
+    
+    ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+    ImGui::TableSetColumnIndex(0);
+
+    // TODO: Make the header interactable to display its config for editing and viewing
+
+    if (ImGui::Button("X")) {
+      FerretLayer::Get().RemoveTable(m_Number);
+    }
+    if (ImGui::IsItemHovered())
+      ImGui::SetTooltip("Delete Table");
+
+    ImGui::SameLine();
+
+    const char* header_name = ImGui::TableGetColumnName(0);
+
+    // Calculate dimensions
+    float column_width = ImGui::GetContentRegionAvail().x;
+    float text_width = ImGui::CalcTextSize(header_name).x;
+
+    // Offset the cursor position to center the text
+    if (column_width > text_width) {
+      ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
+    }
+
+    ImGui::TableHeader(header_name);
+
 
     ImGui::TableNextRow();
 

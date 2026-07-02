@@ -30,6 +30,10 @@ public:
   // Tells the system when the context needs saved
   void SetDirty() { m_ContextDirty = true; }
 
+  // Sends the table removal to the main thread; Clears all entries pertaining to the
+  // provided table id
+  void RemoveTable(const int &tableID);
+
 private:
   // Serializes AccountTable to disk
   void Serialize();

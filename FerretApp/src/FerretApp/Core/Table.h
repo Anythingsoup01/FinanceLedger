@@ -66,6 +66,9 @@ public:
   // This utilizes the id of the selected entry to remove it from the entry list
   void RemoveEntryData(int id);
 
+  // Used to completely remove entries from the given table id
+  void RemoveEntriesFromTable(const int &tableID);
+
   // This returns the internal entries as a const map<int, EntryData_t> pointer
   const std::map<int, EntryData_t> &GetEntries() const { return m_Entries; }
 
@@ -126,6 +129,9 @@ public:
 
   // This will get the Next variable
   inline AccountTable *GetNext() { return m_Next; }
+
+  // Loops over both credit and debit tables removing entries with a given table id
+  void RemoveEntriesFromTable(const int &tableID);
 
 private:
   // Used by both Draw and DrawIndividual to actually render the table
