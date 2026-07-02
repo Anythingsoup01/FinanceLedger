@@ -65,7 +65,7 @@ bool EntryTable::InsertEntryData(const Date_t &date, const int &accountID, const
   m_Entries.emplace(std::pair<int, EntryData_t>(id, data));
 
   if (updateOther)
-    FerretLayer::Get()->SubmitEntryDataToTable(m_AccountIDBuffer, m_CreditTable, m_DateBuffer, m_AccountID, m_AmountBuffer);
+    FerretLayer::Get().SubmitEntryDataToTable(m_AccountIDBuffer, m_CreditTable, m_DateBuffer, m_AccountID, m_AmountBuffer);
 
   // Increment the total value of the table
   m_TotalValue += amount;
@@ -209,7 +209,7 @@ void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, cons
     ImGui::TableSetColumnIndex(1);
     ImGui::SetNextItemWidth(-FLT_MIN);
     sprintf(buf, "##NewAcc%s", tableName);
-    auto &tables = FerretLayer::Get()->GetTables();
+    auto &tables = FerretLayer::Get().GetTables();
     char accBuf[32] = { 0 };
     int *idBuffer = table->GetAccountIDBuffer();
     snprintf(accBuf, sizeof(accBuf), "%i", (*idBuffer) != 0 ? tables.at((*idBuffer)).GetAccountNumber() : 0);
@@ -247,6 +247,7 @@ void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, cons
       memset(table->GetAccountIDBuffer(), 0, sizeof(int));
       memset(table->GetAmountBuffer(), 0, sizeof(float));
       ResizeTable();
+      FerretLayer::Get().SetDirty();
     }
 
     ImGui::EndTable();

@@ -40,25 +40,10 @@ int GetTopDigit(const int &val) {
 
 void FerretLayer::OnAttach() {
   s_Instance = this;
-  DeserializeTables();
+  Deserialize();
 }
 
 void FerretLayer::OnDetach() {
-  YAML::Emitter out;
-
-  out << YAML::BeginMap;
-  out << YAML::Key << "Accounts" << YAML::BeginSeq;
-
-  for (auto &[id, table] : m_Tables) {
-    SerializeTables(out, &table);
-  }
-
-  out << YAML::EndSeq; // Accounts
-  out << YAML::EndMap;
-
-  std::ofstream fout("test.yaml");
-  fout << out.c_str();
-
   s_Instance = nullptr;
 }
 
@@ -78,7 +63,7 @@ void FerretLayer::OnUIRender() {
 
   if (m_Tables.empty()) {
     if (ImGui::Button("Add Table", g_GenericTableSize))
-      m_RenderCreateTable = true;
+      m_RenderPopup = RenderPopup::CreateTable;
 
     if (ImGui::IsItemHovered())
       ImGui::SetTooltip("Used to create a new table either in the row or in the first column");
@@ -92,7 +77,7 @@ void FerretLayer::OnUIRender() {
         Utils::GetPositiveDigitCount(id) != Utils::GetPositiveDigitCount(table.GetNext()->GetAccountNumber()) ||
         Utils::GetTopDigit(id) != Utils::GetTopDigit(table.GetNext()->GetAccountNumber())) { // Within the same block
       if (ImGui::Button("Add Table", g_GenericTableSize))
-        m_RenderCreateTable = true;
+        m_RenderPopup = RenderPopup::CreateTable;
 
       if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Used to create a new table either in the row or in the first column");
@@ -101,64 +86,18 @@ void FerretLayer::OnUIRender() {
   }
   ImGui::End();
 
-  if (m_RenderCreateTable) {
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
-    // Sets the window size to be a third of the application window size
-    float windowSizeX = viewport->Size.x / 3.0f;
-    float windowSizeY = viewport->Size.y / 3.0f;
-
-    // Puts to window in the center of the application window
-    float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
-    float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
-
-    ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
-    ImGui::SetNextWindowPos(ImVec2(windowSizeX, windowSizeY));
-    ImGui::Begin("Create New Table", &m_RenderCreateTable, flags);
-
-    static char accountName[32] = {0};
-    static int accountNumber = 0;
-    static bool isCredit = false;
-
-    ImGui::Text("Account Name");
-    ImGui::SameLine();
-    ImGui::InputText("##accName", accountName, sizeof(accountName));
-
-    ImGui::Text("Account Number");
-    ImGui::SameLine();
-    ImGui::DragInt("##accNum", &accountNumber, 0, 0, 0, "%03d");
-
-    ImGui::Text("Is Credit Account");
-    ImGui::SameLine();
-    ImGui::Checkbox("##isCredit", &isCredit);
-
-    bool disabled = false;
-
-    if (m_Tables.find(accountNumber) != m_Tables.end() || accountNumber == 0) { // account already exists
-      ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Pure Red (Normal)
-      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Lighter Red (Hovered)
-      ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.0f, 0.0f, 1.0f)); // Darker Red (Clicked)
-      disabled = true;
+  switch (m_RenderPopup) {
+    case RenderPopup::CreateTable: {
+      RenderCreateTablePopup();
+      break;
     }
-
-    ImGui::BeginDisabled(disabled);
-
-    if (ImGui::Button("Confirm")) {
-      AccountTable table(accountName, accountNumber, isCredit);
-      m_Tables.emplace(std::pair<int, AccountTable>(accountNumber, table));
-      ReloadTables();
-      memset(accountName, 0, sizeof(accountName));
-      memset(&accountNumber, 0, sizeof(int));
-      memset(&isCredit, 0, sizeof(bool));
-      m_RenderCreateTable = false;
+    case RenderPopup::Save: {
+      RenderSavePopup();
+      break;
     }
-
-    ImGui::EndDisabled();
-
-    if (disabled)
-      ImGui::PopStyleColor(3);
-
-    ImGui::End();
+    default: break;
   }
+
 }
 
 void FerretLayer::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date_t &date, const int &fromTable, const float &amount) {
@@ -173,12 +112,26 @@ void FerretLayer::SubmitEntryDataToTable(const int &toTable, const bool &isCredi
 void FerretLayer::OnEvent(Event &e) {
   EventDispatcher dispatcher(e);
 
-  dispatcher.Dispatch<KeyPressedEvent>(
-      BIND_EVENT_FN(FerretLayer::OnKeyPressedEvent));
+  dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(FerretLayer::OnKeyPressedEvent));
+  dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(FerretLayer::OnWindowClose));
 }
 
-bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
-  return false;
+void FerretLayer::Serialize() {
+  YAML::Emitter out;
+
+  out << YAML::BeginMap;
+  out << YAML::Key << "Accounts" << YAML::BeginSeq;
+
+  for (auto &[id, table] : m_Tables) {
+    SerializeTables(out, &table);
+  }
+
+  out << YAML::EndSeq; // Accounts
+  out << YAML::EndMap;
+
+  std::ofstream fout("test.yaml");
+  fout << out.c_str();
+  fout.close();
 }
 
 void FerretLayer::SerializeTables(YAML::Emitter &out, AccountTable *table) {
@@ -223,7 +176,7 @@ void FerretLayer::SerializeTables(YAML::Emitter &out, AccountTable *table) {
   out << YAML::EndMap; // IndiviualAccounts
 }
 
-bool FerretLayer::DeserializeTables() {
+bool FerretLayer::Deserialize() {
   YAML::Node data;
   try {
     data = YAML::LoadFile("test.yaml");
@@ -287,6 +240,131 @@ void FerretLayer::ReloadTables() {
     }
     prevID = id;
   }
+}
+
+bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
+  return false;
+}
+
+bool FerretLayer::OnWindowClose(WindowCloseEvent &e) {
+  if (!m_ContextDirty) {
+    Application::Get().OnApplicationExit();
+    return true; // Not sure if it needs to complete this function or not before closing
+  }
+
+  m_RenderPopup = RenderPopup::Save;
+
+  return true;
+}
+
+void FerretLayer::RenderCreateTablePopup() {
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+  // Sets the window size to be a third of the application window size
+  float windowSizeX = viewport->Size.x / 3.0f;
+  float windowSizeY = viewport->Size.y / 3.0f;
+
+  // Puts to window in the center of the application window
+  float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
+  float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
+
+  ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
+  ImGui::SetNextWindowPos(ImVec2(windowSizeX, windowSizeY));
+  ImGui::Begin("Create New Table", nullptr, flags);
+
+  static char accountName[32] = {0};
+  static int accountNumber = 0;
+  static bool isCredit = false;
+
+  ImGui::Text("Account Name");
+  ImGui::SameLine();
+  ImGui::InputText("##accName", accountName, sizeof(accountName));
+
+  ImGui::Text("Account Number");
+  ImGui::SameLine();
+  ImGui::DragInt("##accNum", &accountNumber, 0, 0, 0, "%03d");
+
+  ImGui::Text("Is Credit Account");
+  ImGui::SameLine();
+  ImGui::Checkbox("##isCredit", &isCredit);
+
+  bool disabled = false;
+
+  if (m_Tables.find(accountNumber) != m_Tables.end() || accountNumber == 0) { // account already exists
+    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Pure Red (Normal)
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Lighter Red (Hovered)
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.0f, 0.0f, 1.0f)); // Darker Red (Clicked)
+    disabled = true;
+  }
+
+  ImGui::BeginDisabled(disabled);
+
+  if (ImGui::Button("Confirm")) {
+    AccountTable table(accountName, accountNumber, isCredit);
+    m_Tables.emplace(std::pair<int, AccountTable>(accountNumber, table));
+    ReloadTables();
+    memset(accountName, 0, sizeof(accountName));
+    memset(&accountNumber, 0, sizeof(int));
+    memset(&isCredit, 0, sizeof(bool));
+    m_ContextDirty = true;
+    m_RenderPopup = RenderPopup::NONE;
+  }
+
+  ImGui::EndDisabled();
+
+  ImGui::SameLine();
+
+  if (ImGui::Button("Cancel")) {
+    memset(accountName, 0, sizeof(accountName));
+    memset(&accountNumber, 0, sizeof(int));
+    memset(&isCredit, 0, sizeof(bool));
+    m_RenderPopup = RenderPopup::NONE;
+  }
+
+  if (disabled)
+    ImGui::PopStyleColor(3);
+
+  ImGui::End();
+}
+
+void FerretLayer::RenderSavePopup() {
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+  // Sets the window size to be a third of the application window size
+  float windowSizeX = viewport->Size.x / 3.0f;
+  float windowSizeY = viewport->Size.y / 3.0f;
+
+  // Puts to window in the center of the application window
+  float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
+  float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
+
+  ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
+  ImGui::SetNextWindowPos(ImVec2(windowSizeX, windowSizeY));
+  ImGui::Begin("Context Dirty!", nullptr, flags);
+
+  ImGui::Text("Save?");
+  ImGui::SameLine();
+
+  if (ImGui::Button("Yes")) {
+    m_RenderPopup = RenderPopup::NONE;
+    Serialize();
+    Application::Get().OnApplicationExit();
+  }
+
+  ImGui::SameLine();
+
+  if (ImGui::Button("No")) {
+    m_RenderPopup = RenderPopup::NONE;
+    Application::Get().OnApplicationExit();
+  }
+
+  ImGui::SameLine();
+
+  if (ImGui::Button("Cancel")) {
+    m_RenderPopup = RenderPopup::NONE;
+  }
+
+  ImGui::End();
 }
 
 } // namespace Ferret

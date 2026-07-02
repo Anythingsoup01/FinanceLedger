@@ -2,6 +2,7 @@
 
 #include "Ferret/Core/Event/Event.h"
 #include "Ferret/Core/Event/KeyEvent.h"
+#include "Ferret/Core/Event/ApplicationEvent.h"
 #include "Ferret/Layer/Layer.h"
 
 #include "FerretApp/Core/Table.h"
@@ -19,27 +20,44 @@ public:
   virtual void OnUIRender() override;
   virtual void OnEvent(Event &event) override;
 
-  bool OnKeyPressedEvent(KeyPressedEvent &e);
-
-  inline static FerretLayer *Get() { return s_Instance; }
+  inline static FerretLayer &Get() { return *s_Instance; }
 
   const std::map<int, AccountTable> &GetTables() const { return m_Tables; }
 
+  // Used to autofill tables referenced when inserting an entry manually
   void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date_t &date, const int &fromTable, const float &amount);
+
+  void SetDirty() { m_ContextDirty = true; }
 
 private:
   // Serializes AccountTable to disk
+  void Serialize();
   void SerializeTables(YAML::Emitter &out, AccountTable *table);
-
   // Deserializes all accounts saved an disk
-  bool DeserializeTables();
+  bool Deserialize();
 
   // When creating a table we should reload each tables' m_Next pointer
   void ReloadTables();
+
+  bool OnWindowClose(WindowCloseEvent &e);
+  bool OnKeyPressedEvent(KeyPressedEvent &e);
+
+  // Used to render the table creation window
+  void RenderCreateTablePopup();
+  // Used to render the save screen when trying to close with a
+  // dirty context
+  void RenderSavePopup();
+private:
+  enum class RenderPopup {
+    NONE = 0,
+    CreateTable,
+    Save,
+  };
+  RenderPopup m_RenderPopup = RenderPopup::NONE;
 private:
   std::map<int, AccountTable> m_Tables;
   std::vector<std::string> m_TableNames; // Get's reloaded everytime we call ReloadTables(); Contains a list of all table names (along with the AccountNumber)
-  bool m_RenderCreateTable = false; // TODO: Make this an enum for overwriting and summing entries as well
+  bool m_ContextDirty = false; // Used to tell if there is unsaved data
 
   inline static FerretLayer *s_Instance = nullptr;
 };
