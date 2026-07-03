@@ -34,8 +34,8 @@ public:
   // provided table id
   void RemoveTable(const int &tableID);
 
-  // Sets the stored m_EditingID to the entryID and sets m_RenderPopup to EditEntry
-  void EditEntry(const int &tableID, const bool &isCredit, const int &entryID);
+  // Sets all internal variables to view the selected entry in a popup window
+  void ViewEntry(const int &tableID, const bool &isCredit, const int &entryID);
 
 private:
   // When creating a table we should reload each tables' m_Next pointer
@@ -50,6 +50,10 @@ private:
   // Used to render the save screen when trying to close with a
   // dirty context
   void RenderSavePopup();
+
+  // Used to render a detailed look at an entry, showing details like Insertion Date,
+  // Last Modified Date, and the corresponding Journal Entry for it.
+  void RenderEntryDetailsPopup();
 
   void OpenTables(const std::filesystem::path &path);
   // Used to dynamically open another set of account tables
@@ -66,11 +70,17 @@ private:
     CreateTable,
     SaveAndExit,
     SaveAndOpenExistingTables,
+    EntryDetails,
   };
   RenderPopup m_RenderPopup = RenderPopup::NONE;
 private:
   std::map<int, AccountTable> m_Tables;
   std::vector<std::string> m_TableNames; // Get's reloaded everytime we call ReloadTables(); Contains a list of all table names (along with the AccountNumber)
+
+  int m_ViewingTableID; // Used to see which table we are accessing to view
+  int m_ViewingEntryID; // Used to see which entry is being viewed
+  bool m_IsViewingCreditEntry; // Used to see if the entry we have selected is credit
+
   bool m_ContextDirty = false; // Used to tell if there is unsaved data
   std::filesystem::path m_TablePath; // The path we save to
   std::filesystem::path m_TempTablePath; // The path we want to swap to in the event a popup happens

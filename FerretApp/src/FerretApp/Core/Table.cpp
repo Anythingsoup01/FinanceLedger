@@ -1,43 +1,11 @@
 #include "Table.h"
 #include "FerretApp/Layer/FerretLayer.h"
 
+#include "FerretApp/Utils/Utils.h"
+
 extern ImVec2 g_EntrySize;
 
 namespace Ferret {
-
-namespace Utils {
-
-void HeaderCentered(uint32_t columnCount) {
-  ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-  for (int column = 0; column < columnCount; column++) {
-    ImGui::TableSetColumnIndex(column);
-    const char* header_name = ImGui::TableGetColumnName(column);
-
-    // Calculate dimensions
-    float column_width = ImGui::GetContentRegionAvail().x;
-    float text_width = ImGui::CalcTextSize(header_name).x;
-
-    // Offset the cursor position to center the text
-    if (column_width > text_width) {
-      ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
-    }
-
-    ImGui::TableHeader(header_name);
-  }
-}
-
-bool IsSubitted() {
-  if (!ImGui::IsItemHovered())
-    return false;
-
-  return ImGui::IsKeyDown(ImGuiKey_Enter) || ImGui::IsKeyDown(ImGuiKey_KeypadEnter);
-}
-
-}
-
-//////////////////
-//  EntryTable //
-////////////////
 
 EntryTable::EntryTable(int accountID, bool creditTable)
   : m_DateBuffer({0,0,0}), m_AccountIDBuffer(0), m_AmountBuffer(0), m_TotalValue(0), m_AccountID(accountID), m_CreditTable(creditTable) {}
@@ -68,27 +36,6 @@ bool EntryTable::InsertEntryData(const Date_t &date, const int &accountID, const
   return true;
 }
 
-bool EntryTable::OverWriteEntryData() {
-  // The ID is to allow users to click and edit the entry
-  int id = m_DateBuffer.Day + m_DateBuffer.Month + m_DateBuffer.Year + m_AccountIDBuffer;
-
-  // Entry doesn't exist
-  if (m_Entries.find(id) == m_Entries.end()) {
-    return false;
-  }
-  // Decrement the value we are overwriting
-  m_TotalValue -= m_Entries[id].GetAmount();
-
-  // Completely overwrite the data found at this location
-  EntryData_t data = {m_DateBuffer, m_AccountIDBuffer, m_AmountBuffer};
-  m_Entries[id] = data;
-
-  // Increment the total value of the table
-  m_TotalValue += m_AmountBuffer;
-
-  return true;
-}
-
 bool EntryTable::InsertSumEntryData() {
   // The ID is to allow users to click and edit the entry
   int id = m_DateBuffer.Day + m_DateBuffer.Month + m_DateBuffer.Year + m_AccountIDBuffer;
@@ -107,6 +54,12 @@ bool EntryTable::InsertSumEntryData() {
 
   return true;
 }
+
+void EntryTable::EditEntryData(const int &entryID, const Date_t &date, const int &accountID, const float &amount) {
+  RemoveEntryData(entryID);
+  InsertEntryData(date, accountID, amount, false);
+}
+
 
 void EntryTable::RemoveEntryData(int id) {
   // Entry doesn't exist
@@ -129,6 +82,15 @@ void EntryTable::RemoveEntriesFromTable(const int &tableID) {
       ++it;
     }
   }
+}
+
+EntryData_t &EntryTable::GetEntry(const int &entryID) {
+  if (m_Entries.find(entryID) == m_Entries.end()) {
+    static EntryData_t nullEntry = {};
+    return nullEntry;
+  }
+
+  return m_Entries.at(entryID);
 }
 
 //////////////////
@@ -163,7 +125,25 @@ void AccountTable::Draw() {
 void AccountTable::RemoveEntriesFromTable(const int &tableID) {
   m_CreditTable.RemoveEntriesFromTable(tableID);
   m_DebitTable.RemoveEntriesFromTable(tableID);
+  ResizeTable();
 }
+
+EntryData_t &AccountTable::GetEntry(const bool &isCredit, const int &entryID) {
+  if (isCredit) {
+    return m_CreditTable.GetEntry(entryID);
+  } else {
+    return m_DebitTable.GetEntry(entryID);
+  }
+}
+
+void AccountTable::EditEntryData(const bool &isCredit, const int &entryID, const Date_t &date, const int &accountID, const float &amount) {
+  if (isCredit) {
+    m_CreditTable.EditEntryData(entryID, date, accountID, amount);
+  } else {
+    m_DebitTable.EditEntryData(entryID, date, accountID, amount);
+  }
+}
+
 
 void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, const int &tableIndex) {
   // Sizing the table based on it's item count
@@ -182,15 +162,29 @@ void AccountTable::DrawSubTable(EntryTable_t *table, const char *tableName, cons
     Utils::HeaderCentered(3);
 
     for (const auto &[id, entry] : table->GetEntries()) {
+      bool editIntent = false;
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
       ImGui::Text("%i/%i/%i", entry.GetDate().Month, entry.GetDate().Day, entry.GetDate().Year);
+      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+        editIntent = true;
+      }
 
       ImGui::TableSetColumnIndex(1);
       ImGui::Text("%i", entry.GetAccountID());
+      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+        editIntent = true;
+      }
 
       ImGui::TableSetColumnIndex(2);
       ImGui::Text("$%.2f", entry.GetAmount());
+      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+        editIntent = true;
+      }
+
+      if (editIntent) {
+        FerretLayer::Get().ViewEntry(m_Number, table->IsCredit(), id);
+      }
     }
 
     ImGui::TableNextRow();

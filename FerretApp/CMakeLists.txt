@@ -2,11 +2,13 @@ add_executable(FerretApp)
 
 set_property(TARGET FerretApp PROPERTY CXX_STANDARD 20)
 target_sources(FerretApp PRIVATE
+src/FerretApp/Utils/Utils.cpp
 src/FerretApp/Layer/FerretLayer.cpp
 src/FerretApp/FileDialog/FileDialog.cpp
 src/FerretApp/Core/TableSerializer.cpp
 src/FerretApp/Core/Entrypoint.cpp
 src/FerretApp/Core/Table.cpp
+src/FerretApp/Utils/Utils.h
 src/FerretApp/Layer/FerretLayer.h
 src/FerretApp/FileDialog/FileDialog.h
 src/FerretApp/Core/Table.h

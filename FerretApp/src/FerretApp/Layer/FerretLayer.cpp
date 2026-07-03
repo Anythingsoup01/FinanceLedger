@@ -2,45 +2,15 @@
 #include "Ferret.h"
 #include "imgui.h"
 
-#include "FerretApp/Core/TableSerializer.h"
+#include "FerretApp/Utils/Utils.h"
 
+#include "FerretApp/Core/TableSerializer.h"
 #include "FerretApp/FileDialog/FileDialog.h"
 
 ImVec2 g_EntrySize {0,0};
 ImVec2 g_GenericTableSize {0,0};
 
 namespace Ferret {
-
-namespace Utils {
-
-// Returns the digit count; Used for account sorting
-int GetPositiveDigitCount(const int &val) {
-  int digits = 0;
-  int tmp = val;
-  while (true) {
-    if (tmp < 10 && tmp > 0) {
-      digits++;
-      break;
-    }
-    digits++;
-    tmp /= 10;
-  }
-  return digits;
-}
-
-// Gets the very first int from a val; val = 123 : return 1
-int GetTopDigit(const int &val) {
-  int tmp = val;
-  while (true) {
-    if (tmp < 10 && tmp > 0) {
-      break;
-    }
-    tmp /= 10;
-  }
-  return tmp;
-}
-
-}
 
 void FerretLayer::OnAttach() {
   s_Instance = this;
@@ -92,6 +62,10 @@ void FerretLayer::OnUIRender() {
   }
   ImGui::End();
 
+  if (m_RenderPopup != RenderPopup::NONE) {
+    ImGui::SetNextWindowFocus();
+  }
+
   switch (m_RenderPopup) {
     case RenderPopup::CreateTable: {
       RenderCreateTablePopup();
@@ -100,6 +74,10 @@ void FerretLayer::OnUIRender() {
     case RenderPopup::SaveAndExit:
     case RenderPopup::SaveAndOpenExistingTables: {
       RenderSavePopup();
+      break;
+    }
+    case RenderPopup::EntryDetails: {
+      RenderEntryDetailsPopup();
       break;
     }
     default: break;
@@ -128,6 +106,14 @@ void FerretLayer::RemoveTable(const int &tableID) {
     ReloadTables();
     m_ContextDirty = true;
   });
+}
+
+void FerretLayer::ViewEntry(const int &tableID, const bool &isCredit, const int &entryID) {
+  m_ViewingTableID = tableID;
+  m_ViewingEntryID = entryID;
+  m_IsViewingCreditEntry = isCredit;
+
+  m_RenderPopup = RenderPopup::EntryDetails;
 }
 
 void FerretLayer::OnEvent(Event &e) {
@@ -318,6 +304,170 @@ void FerretLayer::RenderSavePopup() {
 
   if (ImGui::Button("Cancel")) {
     m_RenderPopup = RenderPopup::NONE;
+    m_TempTablePath.clear();
+  }
+
+  ImGui::End();
+}
+
+void FerretLayer::RenderEntryDetailsPopup() {
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+  // Sets the window size to be a third of the application window size
+  float windowSizeX = viewport->Size.x / 3.0f;
+  float windowSizeY = viewport->Size.y / 3.0f;
+
+  // Puts to window in the center of the application window
+  float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
+  float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
+
+  ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
+  ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
+  ImGui::Begin("Entry Details", nullptr, flags);
+
+  AccountTable &table = m_Tables.at(m_ViewingTableID);
+  EntryData_t entryData = table.GetEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
+
+  static bool editingEntry = false;
+
+  static Date_t date = entryData.GetDate();
+  static int accountID = entryData.GetAccountID();
+  static float amount = entryData.GetAmount();
+
+  if (accountID == 0) { // Memset will make these 0, since they are static we need to reset it
+    date = entryData.GetDate();
+    accountID = entryData.GetAccountID();
+    amount = entryData.GetAmount();
+  }
+
+  ImGui::SetCursorPosX((windowSizeX - g_EntrySize.x) / 2.0);
+  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
+  ImGuiTableFlags tflags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+  if (ImGui::BeginTable("##Viewing-Table-Entry", 1, tflags, ImVec2(g_EntrySize.x, g_EntrySize.y * 4.0))) {
+    char buf[32] = {0};
+    sprintf(buf, "%s (%i)", table.GetName().c_str(), table.GetAccountNumber());
+    ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, g_EntrySize.x);
+    Utils::HeaderCentered(1);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    std::string entryTableName = m_IsViewingCreditEntry ? "Credit" : "Debit";
+    ImGui::SetCursorPosX(((ImGui::GetColumnWidth() - ImGui::CalcTextSize(entryTableName.c_str()).x) / 2.0f) + ImGui::GetCursorPosX());
+    ImGui::TextUnformatted(entryTableName.c_str());
+    
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    if (ImGui::BeginTable("##EntryInfoHeader", 3, tflags, ImVec2(g_EntrySize.x, g_EntrySize.y * 2))) {
+      ImGui::TableSetupColumn("Date (MDY)", ImGuiTableColumnFlags_WidthStretch, ImGui::CalcTextSize("##/##/####").x);
+      ImGui::TableSetupColumn("Account", ImGuiTableColumnFlags_WidthStretch, ImGui::CalcTextSize("Account").x);
+      ImGui::TableSetupColumn("Amount", ImGuiTableColumnFlags_WidthStretch, ImGui::CalcTextSize("Amount").x);
+
+      Utils::HeaderCentered(3);
+
+      ImGui::TableNextRow();
+
+      if (!editingEntry) {
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%i/%i/%i", entryData.GetDate().Month, entryData.GetDate().Day, entryData.GetDate().Year);
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%i", entryData.GetAccountID());
+
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("$%.2f", entryData.GetAmount());
+      } else {
+        ImGui::TableSetColumnIndex(0);
+        float inputWidth = ImGui::GetColumnWidth() / 3.f;
+        ImGui::PushItemWidth(inputWidth);
+        ImGui::DragInt("##M", &date.Month, 0, 0, 0, "%02d");
+
+        ImGui::SameLine(inputWidth);
+        ImGui::DragInt("##D", &date.Day, 0, 0, 0, "%02d");
+
+        ImGui::SameLine((inputWidth * 2));
+        ImGui::DragInt("##Y", &date.Year, 0, 0, 0, "%04d");
+
+        ImGui::PopItemWidth();
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        auto &tables = FerretLayer::Get().GetTables();
+        char accBuf[32] = {0};
+        snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? table.GetAccountNumber() : 0);
+        if (ImGui::BeginCombo("##EditAccountID", accBuf)) {
+          for (auto &[id, table] : tables) {
+            if (id == table.GetAccountNumber()) { // We can't add or remove money into the same account
+              continue;
+            }
+            const bool is_selected = (accountID == id);
+            char buf[32] = { 0 };
+            snprintf(buf, sizeof(buf), "%i", table.GetAccountNumber());
+            if (ImGui::Selectable(buf, is_selected)) {
+              accountID = id;
+            }
+
+            // Set the initial focus when opening the combo (keyboard navigation)
+            if (is_selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        ImGui::TableSetColumnIndex(2);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::DragFloat("##EditAmount", &amount, 0, 0, 0, "$%.2f");
+      }
+
+      ImGui::EndTable();
+    }
+    ImGui::EndTable();
+  }
+  ImGui::PopStyleVar();
+
+  ImGui::SetCursorPosX(0);
+
+  int month = 0, day = 0, year = 0, hour = 0, minute = 0;
+  ImGui::Text("Created: %02d/%02d/%04d - %02d:%02d", month, day, year, hour, minute);
+  ImGui::Text("Last Updated: %02d/%02d/%04d - %02d:%02d", month, day, year, hour, minute);
+
+  ImGui::Text("Journal Entry");
+  ImGui::Text("    %s", "JOURNAL ENTRY DATA");
+
+  if (!editingEntry) {
+    if (ImGui::Button("Edit")) {
+      editingEntry = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Close")) {
+      m_RenderPopup = RenderPopup::NONE;
+      memset(&date, 0, sizeof(Date_t));
+      memset(&accountID, 0, sizeof(int));
+      memset(&amount, 0, sizeof(float));
+    }
+  } else {
+    if (ImGui::Button("Confirm")) {
+      AccountTable *otherTable = &m_Tables.at(entryData.GetAccountID());
+      table.EditEntryData(m_IsViewingCreditEntry, m_ViewingEntryID, date, accountID, amount);
+      int otherID = entryData.GetDate().Day + entryData.GetDate().Month + entryData.GetDate().Year + m_ViewingTableID;
+      (*otherTable).EditEntryData(!m_IsViewingCreditEntry, otherID, date, m_ViewingTableID, amount);
+
+      memset(&date, 0, sizeof(Date_t));
+      memset(&accountID, 0, sizeof(int));
+      memset(&amount, 0, sizeof(float));
+
+      editingEntry = false;
+      m_RenderPopup = RenderPopup::NONE;
+      m_ContextDirty = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+      editingEntry = false;
+      memset(&date, 0, sizeof(Date_t));
+      memset(&accountID, 0, sizeof(int));
+      memset(&amount, 0, sizeof(float));
+    }
+
   }
 
   ImGui::End();

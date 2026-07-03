@@ -52,16 +52,12 @@ public:
   // This utilizes the buffers found in the private fields and preserves
   // the location in the map.
   //
-  // Returns false when trying to overwrite non-existing data, use
-  // InsertEntryData instead.
-  bool OverWriteEntryData();
-
-  // This utilizes the buffers found in the private fields and preserves
-  // the location in the map.
-  //
   // Returns false when trying to Sum with non-existing data, use
   // InsertEntryData instead.
   bool InsertSumEntryData();
+
+  // Used to edit a specific entry of a table; Used in tandem with FerretLayer's edit system
+  void EditEntryData(const int &entryID, const Date_t &date, const int &accountID, const float &amount);
 
   // This utilizes the id of the selected entry to remove it from the entry list
   void RemoveEntryData(int id);
@@ -71,6 +67,9 @@ public:
 
   // This returns the internal entries as a const map<int, EntryData_t> pointer
   const std::map<int, EntryData_t> &GetEntries() const { return m_Entries; }
+
+  // Used to get a specific entry from the table
+  EntryData_t &GetEntry(const int &entryID);
 
   // This returns the internal non-const pointer to the Date buffer
   // used for when we want to add, overwrite, or sum an entry
@@ -86,6 +85,9 @@ public:
 
   // This is used to return the total value of the entry table
   const float &GetTotalValue() { return m_TotalValue; }
+
+  // This is used to tell which account an entry is being edited / deleted
+  const bool &IsCredit() const { return m_CreditTable; }
 
 private:
   Date_t m_DateBuffer;
@@ -132,6 +134,12 @@ public:
 
   // Loops over both credit and debit tables removing entries with a given table id
   void RemoveEntriesFromTable(const int &tableID);
+
+  // Used to retrieve entry data
+  EntryData_t &GetEntry(const bool &isCredit, const int &entryID);
+
+  // Used to edit a specific entry of a table; Used in tandem with FerretLayer's edit system
+  void EditEntryData(const bool &isCredit, const int &entryID, const Date_t &date, const int &accountID, const float &amount);
 
 private:
   // Used by both Draw and DrawIndividual to actually render the table
