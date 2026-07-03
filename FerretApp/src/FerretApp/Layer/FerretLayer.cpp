@@ -45,10 +45,18 @@ void FerretLayer::OnUIRender() {
       ImGui::SetTooltip("Used to create a new table either in the row or in the first column");
   }
 
+  int rowTableCount = 1;
   for (auto &[id, table] : m_Tables) {
     ImGui::PushID(id);
     table.Draw();
-    ImGui::SameLine();
+    rowTableCount++;
+
+    if (g_GenericTableSize.x * rowTableCount <= Application::Get().GetWindow()->GetWidth()) {
+      ImGui::SameLine();
+    } else {
+      rowTableCount = 0;
+    }
+
     if (!table.GetNext() ||
         Utils::GetPositiveDigitCount(id) != Utils::GetPositiveDigitCount(table.GetNext()->GetAccountNumber()) ||
         Utils::GetTopDigit(id) != Utils::GetTopDigit(table.GetNext()->GetAccountNumber())) { // Within the same block
