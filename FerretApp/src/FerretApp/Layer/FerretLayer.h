@@ -34,13 +34,10 @@ public:
   // provided table id
   void RemoveTable(const int &tableID);
 
-private:
-  // Serializes AccountTable to disk
-  void Serialize();
-  void SerializeTables(YAML::Emitter &out, AccountTable *table);
-  // Deserializes all accounts saved an disk
-  bool Deserialize();
+  // Sets the stored m_EditingID to the entryID and sets m_RenderPopup to EditEntry
+  void EditEntry(const int &tableID, const bool &isCredit, const int &entryID);
 
+private:
   // When creating a table we should reload each tables' m_Next pointer
   void ReloadTables();
 
@@ -49,20 +46,34 @@ private:
 
   // Used to render the table creation window
   void RenderCreateTablePopup();
+
   // Used to render the save screen when trying to close with a
   // dirty context
   void RenderSavePopup();
+
+  void OpenTables(const std::filesystem::path &path);
+  // Used to dynamically open another set of account tables
+  void OpenTables();
+
+  // Used to save the tables if the path is already known
+  void SaveTables();
+
+  // Used to set the table path before saving
+  void SaveTablesAs();
 private:
   enum class RenderPopup {
     NONE = 0,
     CreateTable,
-    Save,
+    SaveAndExit,
+    SaveAndOpenExistingTables,
   };
   RenderPopup m_RenderPopup = RenderPopup::NONE;
 private:
   std::map<int, AccountTable> m_Tables;
   std::vector<std::string> m_TableNames; // Get's reloaded everytime we call ReloadTables(); Contains a list of all table names (along with the AccountNumber)
   bool m_ContextDirty = false; // Used to tell if there is unsaved data
+  std::filesystem::path m_TablePath; // The path we save to
+  std::filesystem::path m_TempTablePath; // The path we want to swap to in the event a popup happens
 
   inline static FerretLayer *s_Instance = nullptr;
 };

@@ -2,6 +2,10 @@
 #include "Ferret.h"
 #include "imgui.h"
 
+#include "FerretApp/Core/TableSerializer.h"
+
+#include "FerretApp/FileDialog/FileDialog.h"
+
 ImVec2 g_EntrySize {0,0};
 ImVec2 g_GenericTableSize {0,0};
 
@@ -40,7 +44,9 @@ int GetTopDigit(const int &val) {
 
 void FerretLayer::OnAttach() {
   s_Instance = this;
-  Deserialize();
+  m_TablePath = FileDialog::OpenFile({});
+  if (!m_TablePath.empty())
+    TableSerializer::Deserialize(&m_Tables, m_TablePath);
 }
 
 void FerretLayer::OnDetach() {
@@ -91,7 +97,8 @@ void FerretLayer::OnUIRender() {
       RenderCreateTablePopup();
       break;
     }
-    case RenderPopup::Save: {
+    case RenderPopup::SaveAndExit:
+    case RenderPopup::SaveAndOpenExistingTables: {
       RenderSavePopup();
       break;
     }
@@ -130,121 +137,6 @@ void FerretLayer::OnEvent(Event &e) {
   dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(FerretLayer::OnWindowClose));
 }
 
-void FerretLayer::Serialize() {
-  YAML::Emitter out;
-
-  out << YAML::BeginMap;
-  out << YAML::Key << "Accounts" << YAML::BeginSeq;
-
-  for (auto &[id, table] : m_Tables) {
-    SerializeTables(out, &table);
-  }
-
-  out << YAML::EndSeq; // Accounts
-  out << YAML::EndMap;
-
-  std::ofstream fout("test.yaml");
-  fout << out.c_str();
-  fout.close();
-}
-
-void FerretLayer::SerializeTables(YAML::Emitter &out, AccountTable *table) {
-  out << YAML::BeginMap; // IndiviualAccounts
-  out << YAML::Key << "AccountNumber" << YAML::Value << table->GetAccountNumber();
-  out << YAML::Key << "AccountName" << YAML::Value << table->GetName();
-  out << YAML::Key << "IsCreditAccount" << YAML::Value << table->IsCreditAccount();
-  out << YAML::Key << "DebitEntries" << YAML::BeginSeq;
-
-  for (auto &[id, entry] : table->GetDebitTable()->GetEntries()) {
-    out << YAML::BeginMap; // DebitEntry
-
-    const Date_t &date = entry.GetDate();
-    out << YAML::Key << "Month" << YAML::Value << date.Month;
-    out << YAML::Key << "Day" << YAML::Value << date.Day;
-    out << YAML::Key << "Year" << YAML::Value << date.Year;
-
-    out << YAML::Key << "AccountID" << YAML::Value << entry.GetAccountID();
-    out << YAML::Key << "Amount" << YAML::Value << entry.GetAmount();
-
-    out << YAML::EndMap; // DebitEntry
-  }
-
-  out << YAML::EndSeq; // DebitEntries
-  out << YAML::Key << "CreditEntries" << YAML::BeginSeq;
-
-  for (auto &[id, entry] : table->GetCreditTable()->GetEntries()) {
-    out << YAML::BeginMap; // CreditEntry
-
-    const Date_t &date = entry.GetDate();
-    out << YAML::Key << "Month" << YAML::Value << date.Month;
-    out << YAML::Key << "Day" << YAML::Value << date.Day;
-    out << YAML::Key << "Year" << YAML::Value << date.Year;
-
-    out << YAML::Key << "AccountID" << YAML::Value << entry.GetAccountID();
-    out << YAML::Key << "Amount" << YAML::Value << entry.GetAmount();
-
-    out << YAML::EndMap; // CreditEntry
-  }
-  out << YAML::EndSeq; // CreditEntries
-
-  out << YAML::EndMap; // IndiviualAccounts
-}
-
-bool FerretLayer::Deserialize() {
-  YAML::Node data;
-  try {
-    data = YAML::LoadFile("test1.yaml");
-  } catch (std::exception &ex) {
-    FE_CLI_ERROR("Failed to load test.yaml file '{0}'", ex.what());
-    m_Tables = {};
-    return false;
-  }
-
-  auto accounts = data["Accounts"];
-
-  if (!accounts.IsSequence()) {
-    return false;
-  }
-
-  int prevId = -1;
-
-  for (auto account : accounts) {
-    int accountNum = account["AccountNumber"].as<int>();
-    std::string accountName = account["AccountName"].as<std::string>();
-    bool creditAcc = account["IsCreditAccount"].as<bool>();
-    AccountTable accountTable = AccountTable(accountName, accountNum, creditAcc);
-    auto debitEntries = account["DebitEntries"];
-    for (auto entry : debitEntries) {
-      Date_t date = Date(
-        entry["Month"].as<int>(),
-        entry["Day"].as<int>(),
-        entry["Year"].as<int>()
-      );
-      int accountId = entry["AccountID"].as<int>();
-      float amount = entry["Amount"].as<float>();
-      accountTable.InsertDebitEntry(date, accountId, amount, false);
-    }
-    auto creditEntries = account["CreditEntries"];
-    for (auto entry : creditEntries) {
-      Date_t date = Date(
-        entry["Month"].as<int>(),
-        entry["Day"].as<int>(),
-        entry["Year"].as<int>()
-      );
-      int accountId = entry["AccountID"].as<int>();
-      float amount = entry["Amount"].as<float>();
-      accountTable.InsertCreditEntry(date, accountId, amount, false);
-    }
-    m_Tables.emplace(std::pair<int, AccountTable>(accountNum, accountTable));
-    if (prevId != -1) {
-      m_Tables.at(prevId).SetNext(&m_Tables.at(accountNum));
-    }
-    prevId = accountNum;
-  }
-
-  return true;
-}
-
 void FerretLayer::ReloadTables() {
   m_TableNames.clear();
   int prevID = -1;
@@ -259,13 +151,31 @@ void FerretLayer::ReloadTables() {
 
 bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
   bool ctrl = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+  bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
 
   switch (e.GetKeyCode()) {
 
+    case KeyCode::O: {
+      if (!ctrl) break;
+
+      OpenTables();
+      break;
+    }
+
     case KeyCode::S: {
       if (!ctrl) break;
-      Serialize();
-      m_ContextDirty = false;
+
+      if (shift) {
+        SaveTablesAs();
+        break;
+      }
+
+      if (m_TablePath.empty()) {
+        SaveTablesAs();
+      } else {
+        SaveTables();
+      }
+
       break;
     }
 
@@ -280,7 +190,7 @@ bool FerretLayer::OnWindowClose(WindowCloseEvent &e) {
     return true; // Not sure if it needs to complete this function or not before closing
   }
 
-  m_RenderPopup = RenderPopup::Save;
+  m_RenderPopup = RenderPopup::SaveAndExit;
 
   return true;
 }
@@ -297,7 +207,7 @@ void FerretLayer::RenderCreateTablePopup() {
   float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
 
   ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
-  ImGui::SetNextWindowPos(ImVec2(windowSizeX, windowSizeY));
+  ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
   ImGui::Begin("Create New Table", nullptr, flags);
 
   static char accountName[32] = {0};
@@ -367,23 +277,41 @@ void FerretLayer::RenderSavePopup() {
   float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
 
   ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
-  ImGui::SetNextWindowPos(ImVec2(windowSizeX, windowSizeY));
+  ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
   ImGui::Begin("Context Dirty!", nullptr, flags);
 
   ImGui::Text("Save?");
   ImGui::SameLine();
 
   if (ImGui::Button("Yes")) {
+    if (m_TablePath.empty()) {
+      SaveTablesAs();
+    } else {
+      SaveTables();
+    }
+
+    RenderPopup tmp = m_RenderPopup;
     m_RenderPopup = RenderPopup::NONE;
-    Serialize();
-    Application::Get().OnApplicationExit();
+
+    if (tmp == RenderPopup::SaveAndExit)
+      Application::Get().OnApplicationExit();
+
+    if (tmp == RenderPopup::SaveAndOpenExistingTables)
+      OpenTables(m_TempTablePath);
+
   }
 
   ImGui::SameLine();
 
   if (ImGui::Button("No")) {
+    RenderPopup tmp = m_RenderPopup;
     m_RenderPopup = RenderPopup::NONE;
-    Application::Get().OnApplicationExit();
+
+    if (tmp == RenderPopup::SaveAndExit)
+      Application::Get().OnApplicationExit();
+
+    if (tmp == RenderPopup::SaveAndOpenExistingTables)
+      OpenTables(m_TempTablePath);
   }
 
   ImGui::SameLine();
@@ -393,6 +321,39 @@ void FerretLayer::RenderSavePopup() {
   }
 
   ImGui::End();
+}
+
+void FerretLayer::OpenTables(const std::filesystem::path &filePath) {
+  m_Tables.clear(); // Safely clear the tables
+  TableSerializer::Deserialize(&m_Tables, filePath);
+}
+
+void FerretLayer::OpenTables() {
+  std::filesystem::path tmp = FileDialog::OpenFile({});
+  if (tmp.empty()) { // Dialog was closed
+    return;
+  }
+
+  if (m_ContextDirty) { // Prompt the user to save before swapping tables
+    m_RenderPopup = RenderPopup::SaveAndOpenExistingTables;
+    m_TempTablePath = tmp;
+    return;
+  }
+
+  OpenTables(tmp);
+}
+
+void FerretLayer::SaveTables() {
+  TableSerializer::Serialize(m_Tables, m_TablePath);
+  m_ContextDirty = false;
+}
+
+void FerretLayer::SaveTablesAs() {
+  m_TablePath = FileDialog::SaveFile({});
+  if (!m_TablePath.empty()) {
+    SaveTables();
+    m_ContextDirty = false;
+  }
 }
 
 } // namespace Ferret

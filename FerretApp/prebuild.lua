@@ -17,11 +17,13 @@ Project = {
 		"${WORKSPACEDIR}/Ferret/vendor/spdlog/include",
 		"${WORKSPACEDIR}/Ferret/vendor/glm",
 		"${WORKSPACEDIR}/Ferret/vendor/imgui",
-    "${WORKSPACEDIR}/Ferret/vendor/yaml-cpp/include/"
+    "${WORKSPACEDIR}/Ferret/vendor/yaml-cpp/include",
+    "${WORKSPACEDIR}/vendor/nfd-e/src/include"
 	},
 
 	links = {
 		"Ferret",
+    "nfd",
 	},
 }
 
