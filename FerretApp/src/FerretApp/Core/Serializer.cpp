@@ -1,4 +1,4 @@
-#include "TableSerializer.h"
+#include "Serializer.h"
 
 #include <yaml-cpp/yaml.h>
 

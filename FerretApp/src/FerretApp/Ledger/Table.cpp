@@ -1,5 +1,6 @@
 #include "Table.h"
-#include "FerretApp/Layer/FerretLayer.h"
+
+#include "Ledger.h"
 
 #include "FerretApp/Utils/Utils.h"
 
@@ -45,7 +46,7 @@ void AccountTable::Draw() {
     // TODO: Make the header interactable to display its config for editing and viewing
 
     if (ImGui::Button("X")) {
-      FerretLayer::Get().RemoveTable(m_Number);
+      Ledger::Get().RemoveTable(m_Number);
     }
     if (ImGui::IsItemHovered())
       ImGui::SetTooltip("Delete Table");

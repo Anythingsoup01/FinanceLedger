@@ -5,7 +5,7 @@
 #include "Ferret/Core/Event/ApplicationEvent.h"
 #include "Ferret/Layer/Layer.h"
 
-#include "FerretApp/Core/Table.h"
+#include "FerretApp/Ledger/Ledger.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -22,68 +22,39 @@ public:
 
   inline static FerretLayer &Get() { return *s_Instance; }
 
-  const std::map<int, AccountTable> &GetTables() const { return m_Tables; }
+  // Opens a save file from a given path
+  void Open(const std::filesystem::path &path);
 
-  // Used to autofill tables referenced when inserting an entry manually
-  void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount);
+  // Opens a save file from the stored temp path
+  void OpenAtTmpPath();
 
-  // Tells the system when the context needs saved
-  void SetDirty() { m_ContextDirty = true; }
+  // Prompts the user to select a save file
+  void Open();
 
-  // Sends the table removal to the main thread; Clears all entries pertaining to the
-  // provided table id
-  void RemoveTable(const int &tableID);
+  // Saves all data to the stored path
+  void Save();
 
-  // Sets all internal variables to view the selected entry in a popup window
-  void ViewEntry(const int &tableID, const bool &isCredit, const int &entryID);
+  // Saves all data to a new path
+  void SaveAs();
 
+  bool IsSavePathValid() { return m_SavePath.empty(); }
 private:
-  // When creating a table we should reload each tables' m_Next pointer
-  void ReloadTables();
-
+  // OnWindowClose override for Ferret
   bool OnWindowClose(WindowCloseEvent &e);
+
   bool OnKeyPressedEvent(KeyPressedEvent &e);
-
-  // Used to render the table creation window
-  void RenderCreateTablePopup();
-
-  // Used to render the save screen when trying to close with a
-  // dirty context
-  void RenderSavePopup();
-
-  // Used to render a detailed look at an entry, showing details like Insertion Date,
-  // Last Modified Date, and the corresponding Journal Entry for it.
-  void RenderEntryDetailsPopup();
-
-  void OpenTables(const std::filesystem::path &path);
-  // Used to dynamically open another set of account tables
-  void OpenTables();
-
-  // Used to save the tables if the path is already known
-  void SaveTables();
-
-  // Used to set the table path before saving
-  void SaveTablesAs();
 private:
-  enum class RenderPopup {
-    NONE = 0,
-    CreateTable,
-    SaveAndExit,
-    SaveAndOpenExistingTables,
-    EntryDetails,
+  enum class RenderState {
+    Ledger = 0,
+    Journal,
+    Statements
   };
-  RenderPopup m_RenderPopup = RenderPopup::NONE;
+  RenderState m_State = RenderState::Ledger;
 private:
-  std::map<int, AccountTable> m_Tables;
-  std::vector<std::string> m_TableNames; // Get's reloaded everytime we call ReloadTables(); Contains a list of all table names (along with the AccountNumber)
+  Ledger m_LedgerView;
 
-  int m_ViewingTableID; // Used to see which table we are accessing to view
-  int m_ViewingEntryID; // Used to see which entry is being viewed
-  bool m_IsViewingCreditEntry; // Used to see if the entry we have selected is credit
-
-  bool m_ContextDirty = false; // Used to tell if there is unsaved data
-  std::filesystem::path m_TablePath; // The path we save to
-  std::filesystem::path m_TempTablePath; // The path we want to swap to in the event a popup happens
+  std::filesystem::path m_SavePath; // The path we save to
+  std::filesystem::path m_TempLoadPath; // The path we want to swap to in the event a popup happens
 
   inline static FerretLayer *s_Instance = nullptr;
 };

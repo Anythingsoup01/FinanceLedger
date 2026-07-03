@@ -1,7 +1,8 @@
 #include "EntryTable.h"
 
-#include "FerretApp/Layer/FerretLayer.h"
 #include "FerretApp/Utils/Utils.h"
+
+#include "Ledger.h"
 
 extern ImVec2 g_EntrySize;
 
@@ -25,7 +26,7 @@ bool EntryTable::InsertEntryData(const Date &date, const int &account, const flo
   m_Entries.emplace(std::pair<int, Entry>(id, data));
 
   if (updateOther)
-    FerretLayer::Get().SubmitEntryDataToTable(account, !m_CreditTable, date, m_AccountID, amount);
+    Ledger::Get().SubmitEntryDataToTable(account, !m_CreditTable, date, m_AccountID, amount);
 
   // Increment the total value of the table
   m_TotalValue += amount;
@@ -83,7 +84,7 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     for (auto &[id, entry] : m_Entries) {
       ImGui::TableNextRow();
       if (entry.RenderEntry())
-        FerretLayer::Get().ViewEntry(m_AccountID, m_CreditTable, id);
+        Ledger::Get().ViewEntry(m_AccountID, m_CreditTable, id);
     }
   }
 
@@ -112,9 +113,9 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
   ImGui::TableSetColumnIndex(1);
   ImGui::SetNextItemWidth(-FLT_MIN);
   sprintf(buf, "##NewAcc%s", tableName.c_str());
-  auto &tables = FerretLayer::Get().GetTables();
+  auto &tables = Ledger::Get().GetTables();
   char accBuf[32] = { 0 };
-  snprintf(accBuf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? FerretLayer::Get().GetTables().at(m_AccountBuffer).GetAccountNumber() : 0);
+  snprintf(accBuf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? Ledger::Get().GetTables().at(m_AccountBuffer).GetAccountNumber() : 0);
   if (ImGui::BeginCombo(buf, accBuf)) {
     for (auto &[id, table] : tables) {
       if (id == m_AccountID) { // We can't add or remove money into the same account
@@ -147,7 +148,7 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     memset(&m_DateBuffer, 0, sizeof(Date));
     memset(&m_AccountBuffer, 0, sizeof(int));
     memset(&m_AmountBuffer, 0, sizeof(float));
-    FerretLayer::Get().SetDirty();
+    Ledger::Get().SetDirty();
   }
 
   ImGui::EndTable();

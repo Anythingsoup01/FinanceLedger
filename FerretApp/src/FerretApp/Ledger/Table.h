@@ -6,6 +6,12 @@
 
 namespace Ferret {
 
+enum class TableTracking {
+  Untracked = 0,
+  Income,
+  Expenses,
+};
+
 // This class will essentially contain all the account data
 // and be used as a layer between the data and the renderer
 class AccountTable {
@@ -52,12 +58,12 @@ private:
   // This is used internally to set the table height to the largest subTable height
   void ResizeTable();
 private:
-  int m_Number;                 // Must be unique
-  std::string m_Name;           // Will display in Account Dropdown
-  bool m_CreditAccount;         // If this is true then the final calculation for will be credit - debit, otherwise debit - credit
-  EntryTable m_DebitTable;    // Holds all debit entries and value
-  EntryTable m_CreditTable;   // Holds all credit entries and value
-  ImVec2 m_TableSize;           // Holds the current size of the table
+  int m_Number;                   // Must be unique
+  std::string m_Name;             // Will display in Account Dropdown
+  bool m_CreditAccount;           // If this is true then the final calculation for will be credit - debit, otherwise debit - credit
+  EntryTable m_DebitTable;        // Holds all debit entries and value
+  EntryTable m_CreditTable;       // Holds all credit entries and value
+  ImVec2 m_TableSize;             // Holds the current size of the table
   AccountTable *m_Next = nullptr; // Used to get the next table id (for now);
 };
 

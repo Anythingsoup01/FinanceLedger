@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Table.h"
+#include "FerretApp/Ledger/Table.h"
 
 namespace Ferret {
 
