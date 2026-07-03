@@ -25,7 +25,7 @@ public:
   const std::map<int, AccountTable> &GetTables() const { return m_Tables; }
 
   // Used to autofill tables referenced when inserting an entry manually
-  void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date_t &date, const int &fromTable, const float &amount);
+  void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount);
 
   // Tells the system when the context needs saved
   void SetDirty() { m_ContextDirty = true; }

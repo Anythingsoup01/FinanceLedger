@@ -62,10 +62,6 @@ void FerretLayer::OnUIRender() {
   }
   ImGui::End();
 
-  if (m_RenderPopup != RenderPopup::NONE) {
-    ImGui::SetNextWindowFocus();
-  }
-
   switch (m_RenderPopup) {
     case RenderPopup::CreateTable: {
       RenderCreateTablePopup();
@@ -84,16 +80,10 @@ void FerretLayer::OnUIRender() {
   }
 }
 
-void FerretLayer::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date_t &date, const int &fromTable, const float &amount) {
+void FerretLayer::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount) {
   auto &table = m_Tables.at(toTable);
-  if (isCredit) {
-    table.InsertDebitEntry(date, fromTable, amount, false);
-  } else {
-    table.InsertCreditEntry(date, fromTable, amount, false);
-  }
+  table.InsertEntry(isCredit, date, fromTable, amount, true);
 }
-
-
 
 void FerretLayer::RemoveTable(const int &tableID) {
   Application::Get().SubmitToMainThread([this, tableID](){
@@ -325,12 +315,18 @@ void FerretLayer::RenderEntryDetailsPopup() {
   ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
   ImGui::Begin("Entry Details", nullptr, flags);
 
+  static bool renderingCombo = false;
+
+  if (!renderingCombo) {
+    ImGui::SetWindowFocus();
+  }
+
   AccountTable &table = m_Tables.at(m_ViewingTableID);
-  EntryData_t entryData = table.GetEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
+  Entry entryData = table.GetEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
 
   static bool editingEntry = false;
 
-  static Date_t date = entryData.GetDate();
+  static Date date = entryData.GetDate();
   static int accountID = entryData.GetAccountID();
   static float amount = entryData.GetAmount();
 
@@ -339,6 +335,26 @@ void FerretLayer::RenderEntryDetailsPopup() {
     accountID = entryData.GetAccountID();
     amount = entryData.GetAmount();
   }
+
+  if (!editingEntry) {
+    if (ImGui::Button("Delete")) {
+      m_RenderPopup = RenderPopup::NONE;
+
+      AccountTable *otherTable = &m_Tables.at(entryData.GetAccountID());
+      int otherEntryID = entryData.GetDate().GetDateID() + m_ViewingTableID;
+      otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
+      table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
+
+      memset(&date, 0, sizeof(Date));
+      memset(&accountID, 0, sizeof(int));
+      memset(&amount, 0, sizeof(float));
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("WARNING - Pressing this will delete this entry!");
+    }
+    ImGui::SameLine();
+  }
+
 
   ImGui::SetCursorPosX((windowSizeX - g_EntrySize.x) / 2.0);
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
@@ -391,16 +407,17 @@ void FerretLayer::RenderEntryDetailsPopup() {
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        auto &tables = FerretLayer::Get().GetTables();
         char accBuf[32] = {0};
-        snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? table.GetAccountNumber() : 0);
+        snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? m_Tables.at(accountID).GetAccountNumber() : 0);
         if (ImGui::BeginCombo("##EditAccountID", accBuf)) {
-          for (auto &[id, table] : tables) {
-            if (id == table.GetAccountNumber()) { // We can't add or remove money into the same account
+          renderingCombo = true;
+          for (auto &[id, table] : m_Tables) {
+            if (id == m_ViewingTableID) { // We can't add or remove money into the same account
               continue;
             }
+
             const bool is_selected = (accountID == id);
-            char buf[32] = { 0 };
+            char buf[32] = { 0 }; 
             snprintf(buf, sizeof(buf), "%i", table.GetAccountNumber());
             if (ImGui::Selectable(buf, is_selected)) {
               accountID = id;
@@ -412,6 +429,8 @@ void FerretLayer::RenderEntryDetailsPopup() {
             }
           }
           ImGui::EndCombo();
+        } else {
+          renderingCombo = false;
         }
 
         ImGui::TableSetColumnIndex(2);
@@ -441,18 +460,21 @@ void FerretLayer::RenderEntryDetailsPopup() {
     ImGui::SameLine();
     if (ImGui::Button("Close")) {
       m_RenderPopup = RenderPopup::NONE;
-      memset(&date, 0, sizeof(Date_t));
+      memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
     }
+
   } else {
     if (ImGui::Button("Confirm")) {
       AccountTable *otherTable = &m_Tables.at(entryData.GetAccountID());
-      table.EditEntryData(m_IsViewingCreditEntry, m_ViewingEntryID, date, accountID, amount);
-      int otherID = entryData.GetDate().Day + entryData.GetDate().Month + entryData.GetDate().Year + m_ViewingTableID;
-      (*otherTable).EditEntryData(!m_IsViewingCreditEntry, otherID, date, m_ViewingTableID, amount);
+      int otherEntryID = entryData.GetDate().GetDateID() + m_ViewingTableID;
+      otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
 
-      memset(&date, 0, sizeof(Date_t));
+      table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
+      table.InsertEntry(m_IsViewingCreditEntry, date, accountID, amount, true);
+
+      memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
 
@@ -463,7 +485,7 @@ void FerretLayer::RenderEntryDetailsPopup() {
     ImGui::SameLine();
     if (ImGui::Button("Cancel")) {
       editingEntry = false;
-      memset(&date, 0, sizeof(Date_t));
+      memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
     }

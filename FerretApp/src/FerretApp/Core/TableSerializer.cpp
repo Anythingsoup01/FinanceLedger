@@ -4,10 +4,10 @@
 
 namespace Ferret {
 
-void SerializeEntry(YAML::Emitter &out, const EntryData_t &entry) {
+void SerializeEntry(YAML::Emitter &out, const Entry &entry) {
   out << YAML::BeginMap; // Entry
 
-  const Date_t &date = entry.GetDate();
+  const Date &date = entry.GetDate();
   out << YAML::Key << "Month" << YAML::Value << date.Month;
   out << YAML::Key << "Day" << YAML::Value << date.Day;
   out << YAML::Key << "Year" << YAML::Value << date.Year;
@@ -83,25 +83,25 @@ bool TableSerializer::Deserialize(std::map<int, AccountTable> *tables, const std
     AccountTable accountTable = AccountTable(accountName, accountNum, creditAcc);
     auto debitEntries = account["DebitEntries"];
     for (auto entry : debitEntries) {
-      Date_t date = Date(
+      Date date = Date(
         entry["Month"].as<int>(),
         entry["Day"].as<int>(),
         entry["Year"].as<int>()
       );
       int accountId = entry["AccountID"].as<int>();
       float amount = entry["Amount"].as<float>();
-      accountTable.InsertDebitEntry(date, accountId, amount, false);
+      accountTable.InsertEntry(false, date, accountId, amount, false);
     }
     auto creditEntries = account["CreditEntries"];
     for (auto entry : creditEntries) {
-      Date_t date = Date(
+      Date date = Date(
         entry["Month"].as<int>(),
         entry["Day"].as<int>(),
         entry["Year"].as<int>()
       );
       int accountId = entry["AccountID"].as<int>();
       float amount = entry["Amount"].as<float>();
-      accountTable.InsertCreditEntry(date, accountId, amount, false);
+      accountTable.InsertEntry(true, date, accountId, amount, false);
     }
     (*tables).emplace(std::pair<int, AccountTable>(accountNum, accountTable));
     if (prevId != -1) {

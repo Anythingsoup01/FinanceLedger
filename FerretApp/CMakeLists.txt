@@ -5,14 +5,18 @@ target_sources(FerretApp PRIVATE
 src/FerretApp/Utils/Utils.cpp
 src/FerretApp/Layer/FerretLayer.cpp
 src/FerretApp/FileDialog/FileDialog.cpp
+src/FerretApp/Core/Entry.cpp
 src/FerretApp/Core/TableSerializer.cpp
 src/FerretApp/Core/Entrypoint.cpp
 src/FerretApp/Core/Table.cpp
+src/FerretApp/Core/EntryTable.cpp
 src/FerretApp/Utils/Utils.h
 src/FerretApp/Layer/FerretLayer.h
 src/FerretApp/FileDialog/FileDialog.h
 src/FerretApp/Core/Table.h
 src/FerretApp/Core/TableSerializer.h
+src/FerretApp/Core/EntryTable.h
+src/FerretApp/Core/Entry.h
 )
 
 target_include_directories(FerretApp PRIVATE
