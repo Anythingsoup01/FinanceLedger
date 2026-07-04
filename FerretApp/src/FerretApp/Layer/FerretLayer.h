@@ -47,7 +47,8 @@ private:
   enum class RenderState {
     Ledger = 0,
     Journal,
-    Statements
+    Statements,
+    MAX_VALUE // Keep Last
   };
   RenderState m_State = RenderState::Ledger;
 private:

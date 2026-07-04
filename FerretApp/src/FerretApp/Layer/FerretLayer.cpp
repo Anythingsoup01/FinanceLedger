@@ -40,6 +40,86 @@ void FerretLayer::OnUIRender() {
     g_GenericTableSize = ImVec2(g_EntrySize.x * 2.0f, g_EntrySize.y * 7.0f);
   }
 
+  std::string header;
+  std::string prevMessage;
+  std::string nextMessage;
+
+  switch (m_State) {
+    case RenderState::Ledger: {
+      //  _              _                 
+      // | |            | |                
+      // | |     ___  __| | __ _  ___ _ __ 
+      // | |    / _ \/ _` |/ _` |/ _ \ '__|
+      // | |___|  __/ (_| | (_| |  __/ |   
+      // |______\___|\__,_|\__, |\___|_|   
+      //                    __/ |          
+      //                   |___/           
+      header = 
+        " _              _                 \n"
+        "| |            | |                \n"
+        "| |     ___  __| | __ _  ___ _ __ \n"
+        "| |    / _ \\/ _` |/ _` |/ _ \\ '__|\n"
+        "| |___|  __/ (_| | (_| |  __/ |   \n"
+        "|______\\___|\\__,_|\\__, |\\___|_|   \n"
+        "                   __/ |          \n"
+        "                  |___/           ";
+      prevMessage = "Statments";
+      nextMessage = "Journal Entries";
+      break;
+    }
+    case RenderState::Journal: {
+      header = 
+        "      _                              _   ______       _        _           \n"
+        "     | |                            | | |  ____|     | |      (_)          \n"
+        "     | | ___  _   _ _ __ _ __   __ _| | | |__   _ __ | |_ _ __ _  ___  ___ \n"
+        " _   | |/ _ \\| | | | '__| '_ \\ / _` | | |  __| | '_ \\| __| '__| |/ _ \\/ __|\n"
+        "| |__| | (_) | |_| | |  | | | | (_| | | | |____| | | | |_| |  | |  __/\\__ \\\n"
+        " \\____/ \\___/ \\__,_|_|  |_| |_|\\__,_|_| |______|_| |_|\\__|_|  |_|\\___||___/";
+      prevMessage = "Ledger";
+      nextMessage = "Statements";
+      break;
+    }
+    case RenderState::Statements: {
+      header = 
+        "  _____ _        _                            _       \n"
+        " / ____| |      | |                          | |      \n"
+        "| (___ | |_ __ _| |_ ___ _ __ ___   ___ _ __ | |_ ___ \n"
+        " \\___ \\| __/ _` | __/ _ \\ '_ ` _ \\ / _ \\ '_ \\| __/ __|\n"
+        " ____) | || (_| | ||  __/ | | | | |  __/ | | | |_\\__ \\\n"
+        "|_____/ \\__\\__,_|\\__\\___|_| |_| |_|\\___|_| |_|\\__|___/";
+      prevMessage = "Ledger";
+      nextMessage = "Statements";
+      break;
+    }
+    default: break;
+  }
+
+  ImVec2 headerSize = ImGui::CalcTextSize(header.c_str());
+  if (ImGui::Button("<", ImVec2(headerSize.y, headerSize.y))) {
+    if ((int)m_State == 0) {
+      m_State = (RenderState)((int)RenderState::MAX_VALUE - 1); // Sets m_State to the last item before MAX_VALUE
+    } else {
+      m_State = (RenderState)((int)m_State - 1); // Decrements m_State to the previous item in the list
+    }
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", prevMessage.c_str());
+  }
+
+  ImGui::SameLine();
+  ImGui::SetCursorPosX((viewport->Size.x - headerSize.x) / 2.0);
+  ImGui::Text("%s", header.c_str());
+  ImGui::SameLine();
+  ImGui::SetCursorPosX(viewport->Size.x - headerSize.y);
+  if (ImGui::Button(">", ImVec2(headerSize.y, headerSize.y))) {
+    m_State = (RenderState)(((int)m_State + 1) % (int)RenderState::MAX_VALUE); // Automatically drops to 0 when reaching the max value, otherwise sets it to the next item in the list
+  }
+
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", nextMessage.c_str());
+  }
+
+
   switch(m_State) {
     case RenderState::Ledger: {
       m_LedgerView.OnRenderData();
