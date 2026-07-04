@@ -638,7 +638,7 @@ void Ledger::RenderTableDetailsPopup() {
 
     bool disabled = false;
 
-    if (Ledger::Get().GetTables().find(accountID) != Ledger::Get().GetTables().end() || accountID == 0) { // account already exists
+    if ((Ledger::Get().GetTables().find(accountID) != Ledger::Get().GetTables().end() || accountID == 0) && accountID != table.GetAccountNumber()) { // account already exists
       ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Pure Red (Normal)
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Lighter Red (Hovered)
       ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.0f, 0.0f, 1.0f)); // Darker Red (Clicked)
