@@ -8,10 +8,31 @@ extern ImVec2 g_EntrySize;
 
 namespace Ferret {
 
-AccountTable::AccountTable(const std::string &accountName, const int &accountNumber, const bool &isCredit)
+TableTracking StringToTableTracking(const std::string &trackStr) {
+  if (trackStr == "Untracked") {
+    return TableTracking::Untracked;
+  } else if (trackStr == "Income") {
+    return TableTracking::Income;
+  } else if (trackStr == "Expenses") {
+    return TableTracking::Expenses;
+  }
+
+  return TableTracking::Untracked;
+}
+
+std::string TableTrackingToString(const TableTracking &tracking) {
+  switch (tracking) {
+    case TableTracking::Untracked: { return "Untracked"; }
+    case TableTracking::Income:    { return "Income"; }
+    case TableTracking::Expenses:  { return "Expenses"; }
+  }
+}
+
+AccountTable::AccountTable(const std::string &accountName, const int &accountNumber, const bool &isCredit, const TableTracking &tracking)
   : m_Name(accountName),
     m_Number(accountNumber),
     m_CreditAccount(isCredit),
+    m_Tracking(tracking),
     m_DebitTable(accountNumber, false),
     m_CreditTable(accountNumber, true) {
 }

@@ -24,8 +24,8 @@ Ledger::~Ledger() {
   s_Instance = nullptr;
 }
 
-void Ledger::OnRender() {
-if (m_Tables.empty()) {
+void Ledger::OnRenderData() {
+  if (m_Tables.empty()) {
     if (ImGui::Button("Add Table", g_GenericTableSize))
       m_RenderPopup = RenderPopup::CreateTable;
 
@@ -33,7 +33,7 @@ if (m_Tables.empty()) {
       ImGui::SetTooltip("Used to create a new table either in the row or in the first column");
   }
 
-  bool shouldNewLine = false;
+  bool shouldNewLine = true;
   int rowTableCount = 0;
   for (auto &[id, table] : m_Tables) {
     ImGui::PushID(id);
@@ -67,7 +67,6 @@ if (m_Tables.empty()) {
 
     ImGui::PopID();
   }
-  ImGui::End();
 
   switch (m_RenderPopup) {
     case RenderPopup::CreateTable: {
@@ -143,6 +142,13 @@ void Ledger::RenderCreateTablePopup() {
   static char accountName[32] = {0};
   static int accountNumber = 0;
   static bool isCredit = false;
+  static TableTracking tracking = TableTracking::Untracked;
+
+  static bool renderingCombo = false;
+
+  if (!renderingCombo) {
+    ImGui::SetWindowFocus();
+  }
 
   ImGui::Text("Account Name");
   ImGui::SameLine();
@@ -156,6 +162,48 @@ void Ledger::RenderCreateTablePopup() {
   ImGui::SameLine();
   ImGui::Checkbox("##isCredit", &isCredit);
 
+  ImGui::Text("Account Tracking");
+  ImGui::SameLine();
+  if (ImGui::BeginCombo("##tracking", TableTrackingToString(tracking).c_str())) {
+    renderingCombo = true;
+    for (int i = 0; i < (int)TableTracking::MAX_ITEM; i++) {
+      TableTracking track = (TableTracking)i;
+      const bool is_selected = (tracking == track);
+      char buf[32] = { 0 }; 
+      switch (track) {
+        case TableTracking::Untracked: {
+          if (ImGui::Selectable("Untracked", is_selected)) {
+            tracking = track;
+          }
+          break;
+        }
+        case TableTracking::Income: {
+          if (ImGui::Selectable("Income", is_selected)) {
+            tracking = track;
+          }
+          break;
+        }
+        case TableTracking::Expenses: {
+          if (ImGui::Selectable("Expenses", is_selected)) {
+            tracking = track;
+          }
+          break;
+        }
+        default: {
+          continue;
+        }
+      }
+
+      // Set the initial focus when opening the combo (keyboard navigation)
+      if (is_selected) {
+        ImGui::SetItemDefaultFocus();
+      }
+    }
+    ImGui::EndCombo();
+  } else {
+    renderingCombo = false;
+  }
+
   bool disabled = false;
 
   if (m_Tables.find(accountNumber) != m_Tables.end() || accountNumber == 0) { // account already exists
@@ -168,12 +216,13 @@ void Ledger::RenderCreateTablePopup() {
   ImGui::BeginDisabled(disabled);
 
   if (ImGui::Button("Confirm")) {
-    AccountTable table(accountName, accountNumber, isCredit);
+    AccountTable table(accountName, accountNumber, isCredit, tracking);
     m_Tables.emplace(std::pair<int, AccountTable>(accountNumber, table));
     ReloadTables();
     memset(accountName, 0, sizeof(accountName));
     memset(&accountNumber, 0, sizeof(int));
     memset(&isCredit, 0, sizeof(bool));
+    memset(&tracking, 0, sizeof(TableTracking));
     m_ContextDirty = true;
     m_RenderPopup = RenderPopup::NONE;
   }
@@ -209,6 +258,8 @@ void Ledger::RenderSavePopup() {
   ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
   ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
   ImGui::Begin("Context Dirty!", nullptr, flags);
+
+  ImGui::SetWindowFocus();
 
   ImGui::Text("Save?");
   ImGui::SameLine();

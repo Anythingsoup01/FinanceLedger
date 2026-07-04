@@ -10,14 +10,20 @@ enum class TableTracking {
   Untracked = 0,
   Income,
   Expenses,
+  MAX_ITEM // Leave at bottom
 };
+
+// Used to convert a string to a TableTracking enum
+TableTracking StringToTableTracking(const std::string &trackStr);
+
+// Used to convert a TableTracking enum to a string
+std::string TableTrackingToString(const TableTracking &tracking);
 
 // This class will essentially contain all the account data
 // and be used as a layer between the data and the renderer
 class AccountTable {
 public:
-  AccountTable() = default;
-  AccountTable(const std::string &accountName, const int &accountNumber, const bool &isCredit);
+  AccountTable(const std::string &accountName, const int &accountNumber, const bool &isCredit, const TableTracking &tracking);
   ~AccountTable() = default;
 
   // Used to retrieve the Debit EntryTable_t as a const pointer
@@ -26,21 +32,24 @@ public:
   // Used to retrieve the Credit EntryTable_t as a const pointer
   const EntryTable *GetCreditTable() const { return &m_CreditTable; }
 
-  void InsertEntry(const bool &isCredit, const Date &date, const int &accountID, const float &amount, bool updateOther);
-
-  const int &GetAccountNumber() const { return m_Number; }
-  const std::string &GetName() const { return m_Name; }
-  const bool &IsCreditAccount() const { return m_CreditAccount; }
-
-  // This will draw the entire table as an item with other tables,
-  // rather than being it's own window
-  void Draw();
-
   // This will set the Next variable
   inline void SetNext(AccountTable *next) { m_Next = next; }
 
   // This will get the Next variable
   inline AccountTable *GetNext() { return m_Next; }
+
+  const int &GetAccountNumber() const { return m_Number; }
+  const std::string &GetName() const { return m_Name; }
+  const bool &IsCreditAccount() const { return m_CreditAccount; }
+
+  inline void SetTracking(const TableTracking &tracking) { m_Tracking = tracking; }
+
+  const TableTracking &GetTracking() const { return m_Tracking; }
+
+  // This will draw the entire table
+  void Draw();
+
+  void InsertEntry(const bool &isCredit, const Date &date, const int &accountID, const float &amount, bool updateOther);
 
   // Loops over both credit and debit tables removing entries with a given table id
   void RemoveEntriesFromTable(const int &tableID);
@@ -61,6 +70,7 @@ private:
   int m_Number;                   // Must be unique
   std::string m_Name;             // Will display in Account Dropdown
   bool m_CreditAccount;           // If this is true then the final calculation for will be credit - debit, otherwise debit - credit
+  TableTracking m_Tracking;       // Holds whether the account is an expense, income, or untracked account;
   EntryTable m_DebitTable;        // Holds all debit entries and value
   EntryTable m_CreditTable;       // Holds all credit entries and value
   ImVec2 m_TableSize;             // Holds the current size of the table

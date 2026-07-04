@@ -42,11 +42,13 @@ void FerretLayer::OnUIRender() {
 
   switch(m_State) {
     case RenderState::Ledger: {
-      m_LedgerView.OnRender();
+      m_LedgerView.OnRenderData();
       break;
     }
     default: break;
   }
+
+  ImGui::End();
 }
 
 void FerretLayer::OnEvent(Event &e) {

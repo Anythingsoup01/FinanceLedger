@@ -17,14 +17,16 @@ public:
   Ledger();
   ~Ledger();
 
+  // Renders all tables
+  void OnRenderData();
+
+
   // Get's all tables we have stored
   const std::map<int, AccountTable> &GetTables() const { return m_Tables; }
 
   // Sets the table map
   void SetTables(const std::map<int, AccountTable> &tables) { m_Tables = tables; ReloadTables(); }
 
-  // Renders all tables
-  void OnRender();
 
   // Used to autofill tables referenced when inserting an entry manually
   void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount);

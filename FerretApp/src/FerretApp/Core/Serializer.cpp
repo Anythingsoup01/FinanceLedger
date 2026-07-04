@@ -23,6 +23,7 @@ void SerializeTable(YAML::Emitter &out, const AccountTable &table) {
   out << YAML::Key << "AccountNumber" << YAML::Value << table.GetAccountNumber();
   out << YAML::Key << "AccountName" << YAML::Value << table.GetName();
   out << YAML::Key << "IsCreditAccount" << YAML::Value << table.IsCreditAccount();
+  out << YAML::Key << "Tracking" << YAML::Value << TableTrackingToString(table.GetTracking());
   out << YAML::Key << "DebitEntries" << YAML::BeginSeq;
 
   for (auto &[id, entry] : table.GetDebitTable()->GetEntries()) {
@@ -80,7 +81,10 @@ bool TableSerializer::Deserialize(std::map<int, AccountTable> *tables, const std
     int accountNum = account["AccountNumber"].as<int>();
     std::string accountName = account["AccountName"].as<std::string>();
     bool creditAcc = account["IsCreditAccount"].as<bool>();
-    AccountTable accountTable = AccountTable(accountName, accountNum, creditAcc);
+    TableTracking tracking = TableTracking::Untracked;
+    if (account["Tracking"].IsDefined())
+      tracking = StringToTableTracking(account["Tracking"].as<std::string>());
+    AccountTable accountTable = AccountTable(accountName, accountNum, creditAcc, tracking);
     auto debitEntries = account["DebitEntries"];
     for (auto entry : debitEntries) {
       Date date = Date(
