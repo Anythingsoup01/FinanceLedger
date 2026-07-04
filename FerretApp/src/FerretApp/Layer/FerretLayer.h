@@ -5,8 +5,6 @@
 #include "Ferret/Core/Event/ApplicationEvent.h"
 #include "Ferret/Layer/Layer.h"
 
-#include "FerretApp/Ledger/Ledger.h"
-
 #include <yaml-cpp/yaml.h>
 
 namespace Ferret {
@@ -52,8 +50,6 @@ private:
   };
   RenderState m_State = RenderState::Ledger;
 private:
-  Ledger m_LedgerView;
-
   std::filesystem::path m_SavePath; // The path we save to
   std::filesystem::path m_TempLoadPath; // The path we want to swap to in the event a popup happens
 

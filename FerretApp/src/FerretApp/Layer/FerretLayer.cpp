@@ -4,6 +4,8 @@
 
 #include "FerretApp/Utils/Utils.h"
 
+#include "FerretApp/Ledger/Ledger.h"
+
 #include "FerretApp/Core/Serializer.h"
 #include "FerretApp/FileDialog/FileDialog.h"
 
@@ -18,7 +20,7 @@ void FerretLayer::OnAttach() {
   if (!m_SavePath.empty()) {
     std::map<int, AccountTable> tables;
     TableSerializer::Deserialize(&tables, m_SavePath);
-    m_LedgerView.SetTables(tables);
+    Ledger::SetTables(tables);
   }
 }
 
@@ -122,7 +124,7 @@ void FerretLayer::OnUIRender() {
 
   switch(m_State) {
     case RenderState::Ledger: {
-      m_LedgerView.OnRenderData();
+      Ledger::OnRenderData();
       break;
     }
     default: break;
@@ -174,12 +176,12 @@ bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
 }
 
 bool FerretLayer::OnWindowClose(WindowCloseEvent &e) {
-  if (!m_LedgerView.IsDirty()) {
+  if (!Ledger::IsDirty()) {
     Application::Get().OnApplicationExit();
     return true; // Not sure if it needs to complete this function or not before closing
   }
 
-  m_LedgerView.SetRenderPopup(RenderPopup::SaveAndExit);
+  Ledger::SetRenderPopup(RenderPopup::SaveAndExit);
 
   return true;
 }
@@ -188,7 +190,7 @@ bool FerretLayer::OnWindowClose(WindowCloseEvent &e) {
 void FerretLayer::Open(const std::filesystem::path &filePath) {
   std::map<int, AccountTable> tables;
   TableSerializer::Deserialize(&tables, filePath);
-  m_LedgerView.SetTables(tables);
+  Ledger::SetTables(tables);
 
   m_SavePath = filePath;
 }
@@ -203,8 +205,8 @@ void FerretLayer::Open() {
     return;
   }
 
-  if (m_LedgerView.IsDirty()) { // Prompt the user to save before swapping tables
-    m_LedgerView.SetRenderPopup(RenderPopup::SaveAndOpenExistingTables);
+  if (Ledger::IsDirty()) { // Prompt the user to save before swapping tables
+    Ledger::SetRenderPopup(RenderPopup::SaveAndOpenExistingTables);
     m_TempLoadPath = tmp;
     return;
   }
@@ -213,8 +215,8 @@ void FerretLayer::Open() {
 }
 
 void FerretLayer::Save() {
-  TableSerializer::Serialize(m_LedgerView.GetTables(), m_SavePath);
-  m_LedgerView.SetDirty(false);
+  TableSerializer::Serialize(Ledger::GetTables(), m_SavePath);
+  Ledger::SetDirty(false);
 }
 
 void FerretLayer::SaveAs() {

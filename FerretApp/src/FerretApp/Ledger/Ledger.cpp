@@ -16,14 +16,6 @@ extern ImVec2 g_GenericTableSize;
 
 namespace Ferret {
 
-Ledger::Ledger() {
-  s_Instance = this;
-}
-
-Ledger::~Ledger() {
-  s_Instance = nullptr;
-}
-
 void Ledger::OnRenderData() {
   if (m_Tables.empty()) {
     if (ImGui::Button("Add Table", g_GenericTableSize))
@@ -96,7 +88,7 @@ void Ledger::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, co
 }
 
 void Ledger::RemoveTable(const int &tableID) {
-  Application::Get().SubmitToMainThread([this, tableID](){
+  Application::Get().SubmitToMainThread([tableID](){
     for (auto &[id, table] : m_Tables) {
       if (id == tableID) continue;
       table.RemoveEntriesFromTable(tableID);
@@ -638,7 +630,7 @@ void Ledger::RenderTableDetailsPopup() {
 
     bool disabled = false;
 
-    if ((Ledger::Get().GetTables().find(accountID) != Ledger::Get().GetTables().end() || accountID == 0) && accountID != table.GetAccountNumber()) { // account already exists
+    if ((Ledger::GetTables().find(accountID) != Ledger::GetTables().end() || accountID == 0) && accountID != table.GetAccountNumber()) { // account already exists
       ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Pure Red (Normal)
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Lighter Red (Hovered)
       ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.0f, 0.0f, 1.0f)); // Darker Red (Clicked)
