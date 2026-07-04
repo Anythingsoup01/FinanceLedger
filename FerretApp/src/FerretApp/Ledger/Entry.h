@@ -22,13 +22,10 @@ public:
     : m_Date(date), m_Account(account), m_Amount(amount) {}
 
   const Date &GetDate() const { return m_Date; }
-  void SetDate(const Date &date) { m_Date = date; }
 
   const int &GetAccountID() const { return m_Account; }
-  void SetAccountID(const int &accountID) { m_Account = accountID; }
 
   const float &GetAmount() const { return m_Amount; }
-  void SetAmount(const float &amount) { m_Amount = amount; }
 
   // Generates the entry id so we can easily access it later
   int32_t GetEntryID() { return m_Date.GetDateID() + m_Account; }
