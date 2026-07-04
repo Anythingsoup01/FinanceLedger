@@ -25,6 +25,7 @@ std::string TableTrackingToString(const TableTracking &tracking) {
     case TableTracking::Untracked: { return "Untracked"; }
     case TableTracking::Income:    { return "Income"; }
     case TableTracking::Expenses:  { return "Expenses"; }
+    default: return "NOT IMPLEMENTED!";
   }
 }
 
@@ -87,6 +88,11 @@ void AccountTable::Draw() {
 
     ImGui::TableHeader(header_name);
 
+    ImGui::TableSetColumnIndex(0);
+    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+      Ledger::Get().ViewTable(m_Number);
+    }
+
 
     ImGui::TableNextRow();
 
@@ -114,6 +120,8 @@ void AccountTable::Draw() {
 
       ImGui::EndTable();
     }
+    
+
 
     // Account balance
     ImGui::TableNextRow();

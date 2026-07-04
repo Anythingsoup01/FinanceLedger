@@ -32,6 +32,8 @@ public:
   // Get's the total value from the table
   const float &GetTotalValue() const { return m_TotalValue; }
 
+  inline const bool &IsCreditAccount() const { return m_CreditTable; }
+
   // Used render the table and it's entries
   // Returns true when submitting a new entry
   bool RenderTable(const std::string &tableName, const int &columnIndex);

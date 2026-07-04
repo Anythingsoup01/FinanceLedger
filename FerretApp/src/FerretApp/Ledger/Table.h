@@ -38,13 +38,19 @@ public:
   // This will get the Next variable
   inline AccountTable *GetNext() { return m_Next; }
 
-  const int &GetAccountNumber() const { return m_Number; }
   const std::string &GetName() const { return m_Name; }
+
+  void SetName(const std::string &name) { m_Name = name; }
+
+  const int &GetAccountNumber() const { return m_Number; }
+
   const bool &IsCreditAccount() const { return m_CreditAccount; }
 
-  inline void SetTracking(const TableTracking &tracking) { m_Tracking = tracking; }
+  void SetCreditAccount(const bool &isCredit) { m_CreditAccount = isCredit; }
 
   const TableTracking &GetTracking() const { return m_Tracking; }
+
+  inline void SetTracking(const TableTracking &tracking) { m_Tracking = tracking; }
 
   // This will draw the entire table
   void Draw();

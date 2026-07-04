@@ -7,9 +7,8 @@ namespace Ferret {
 enum class RenderPopup {
   NONE = 0,
   CreateTable,
-  SaveAndExit,
-  SaveAndOpenExistingTables,
-  EntryDetails,
+  SaveAndExit, SaveAndOpenExistingTables,
+  EntryDetails, TableDetails
 };
 
 class Ledger {
@@ -27,7 +26,6 @@ public:
   // Sets the table map
   void SetTables(const std::map<int, AccountTable> &tables) { m_Tables = tables; ReloadTables(); }
 
-
   // Used to autofill tables referenced when inserting an entry manually
   void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount);
 
@@ -42,8 +40,14 @@ public:
   // provided table id
   void RemoveTable(const int &tableID);
 
+  // Creates a table on the main thread
+  void CreateTable(const int &tableID, const std::string &name, const bool &isCredit, const TableTracking &tracking);
+
   // Sets all internal variables to view the selected entry in a popup window
   void ViewEntry(const int &tableID, const bool &isCredit, const int &entryID);
+
+  // Sets all internal variables to view the selected table in a popup window
+  void ViewTable(const int &tableID);
 
   static Ledger &Get() { return *s_Instance; }
 private:
@@ -60,6 +64,12 @@ private:
   // Used to render a detailed look at an entry, showing details like Insertion Date,
   // Last Modified Date, and the corresponding Journal Entry for it.
   void RenderEntryDetailsPopup();
+
+  void LoadEntriesToTable(AccountTable *toTable, const EntryTable &fromEntryTable);
+
+  // Used to render a detailed look at a table, showing details like Last Insertion Date,
+  // Last Insertion ID, Name, ID, and Tracking along with an option to edit it
+  void RenderTableDetailsPopup();
 private:
   // TODO: Create a RenderPopup Class / Abstract class so we can assign popups to sections
   RenderPopup m_RenderPopup = RenderPopup::NONE;

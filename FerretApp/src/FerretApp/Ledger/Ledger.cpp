@@ -82,6 +82,10 @@ void Ledger::OnRenderData() {
       RenderEntryDetailsPopup();
       break;
     }
+    case RenderPopup::TableDetails: {
+      RenderTableDetailsPopup();
+      break;
+    }
     default: break;
   }
 }
@@ -104,12 +108,23 @@ void Ledger::RemoveTable(const int &tableID) {
   });
 }
 
+void Ledger::CreateTable(const int &tableID, const std::string &name, const bool &isCredit, const TableTracking &tracking) {
+  AccountTable table(name, tableID, isCredit, tracking);
+  m_Tables.emplace(std::pair<int, AccountTable>(tableID, table));
+  ReloadTables();
+}
+
 void Ledger::ViewEntry(const int &tableID, const bool &isCredit, const int &entryID) {
   m_ViewingTableID = tableID;
   m_ViewingEntryID = entryID;
   m_IsViewingCreditEntry = isCredit;
 
   m_RenderPopup = RenderPopup::EntryDetails;
+}
+
+void Ledger::ViewTable(const int &tableID) {
+  m_ViewingTableID = tableID;
+  m_RenderPopup = RenderPopup::TableDetails;
 }
 
 void Ledger::ReloadTables() {
@@ -216,9 +231,7 @@ void Ledger::RenderCreateTablePopup() {
   ImGui::BeginDisabled(disabled);
 
   if (ImGui::Button("Confirm")) {
-    AccountTable table(accountName, accountNumber, isCredit, tracking);
-    m_Tables.emplace(std::pair<int, AccountTable>(accountNumber, table));
-    ReloadTables();
+    CreateTable(accountNumber, accountName, isCredit, tracking);
     memset(accountName, 0, sizeof(accountName));
     memset(&accountNumber, 0, sizeof(int));
     memset(&isCredit, 0, sizeof(bool));
@@ -229,6 +242,9 @@ void Ledger::RenderCreateTablePopup() {
 
   ImGui::EndDisabled();
 
+  if (disabled)
+    ImGui::PopStyleColor(3);
+
   ImGui::SameLine();
 
   if (ImGui::Button("Cancel")) {
@@ -238,8 +254,6 @@ void Ledger::RenderCreateTablePopup() {
     m_RenderPopup = RenderPopup::NONE;
   }
 
-  if (disabled)
-    ImGui::PopStyleColor(3);
 
   ImGui::End();
 }
@@ -494,6 +508,204 @@ void Ledger::RenderEntryDetailsPopup() {
       memset(&amount, 0, sizeof(float));
     }
 
+  }
+
+  ImGui::End();
+}
+
+void Ledger::LoadEntriesToTable(AccountTable *toTable, const EntryTable &fromEntryTable) {
+  for (auto &[id, entry] : fromEntryTable.GetEntries()) {
+    toTable->InsertEntry(fromEntryTable.IsCreditAccount(), entry.GetDate(), entry.GetAccountID(), entry.GetAmount(), true);
+  }
+}
+
+void Ledger::RenderTableDetailsPopup() {
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+  // Sets the window size to be a third of the application window size
+  float windowSizeX = viewport->Size.x / 3.0f;
+  float windowSizeY = viewport->Size.y / 3.0f;
+
+  // Puts to window in the center of the application window
+  float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
+  float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
+
+  ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
+  ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
+  ImGui::Begin("Table Details", nullptr, flags);
+
+  static bool renderingCombo = false;
+
+  if (!renderingCombo) {
+    ImGui::SetWindowFocus();
+  }
+
+  AccountTable &table = m_Tables.at(m_ViewingTableID);
+
+  static bool editingTable = false;
+
+  static std::string name = table.GetName();
+  static char nameBuf[32] = {0};
+  snprintf(nameBuf, sizeof(nameBuf), "%s", name.c_str());
+  static int accountID = table.GetAccountNumber();
+  static bool creditAcc = table.IsCreditAccount();
+  static TableTracking tracking = table.GetTracking();
+
+  if (accountID == 0) { // Memset will make these 0, since they are static we need to reset it
+    name = table.GetName();
+    snprintf(nameBuf, sizeof(nameBuf), "%s", name.c_str());
+    accountID = table.GetAccountNumber();
+    creditAcc = table.IsCreditAccount();
+    tracking = table.GetTracking();
+  }
+
+  int month = 0, day = 0, year = 0, hour = 0, minute = 0;
+  ImGui::Text("Created: %02d/%02d/%04d - %02d:%02d", month, day, year, hour, minute);
+  ImGui::Text("Last Updated: %02d/%02d/%04d - %02d:%02d", month, day, year, hour, minute);
+
+    if (!editingTable) {
+
+    ImGui::Text("Table Name: %s", nameBuf);
+    ImGui::Text("Table ID: %i", accountID);
+    ImGui::Text("IsCreditAccount: %s", creditAcc ? "Y" : "N");
+    ImGui::Text("Table Tracking: %s", TableTrackingToString(tracking).c_str());
+
+
+    if (ImGui::Button("Edit")) {
+      editingTable = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Close")) {
+      m_RenderPopup = RenderPopup::NONE;
+      name.clear();
+      memset(&nameBuf, 0, sizeof(strlen(nameBuf)));
+      memset(&accountID, 0, sizeof(int));
+      memset(&creditAcc, 0, sizeof(bool));
+      memset(&tracking, 0, sizeof(TableTracking));
+    }
+
+  } else {
+    ImGui::Text("Table Name:");
+    ImGui::SameLine();
+    ImGui::InputText("##EditTableName", nameBuf, sizeof(nameBuf));
+    ImGui::Text("Table ID:");
+    ImGui::SameLine();
+    ImGui::InputInt("##EditTableNum", &accountID, 0, 0);
+    ImGui::Text("IsCreditAccount:");
+    ImGui::SameLine();
+    ImGui::Checkbox("##EditIsCredit", &creditAcc);
+    ImGui::Text("Table Tracking:");
+    ImGui::SameLine();
+    if (ImGui::BeginCombo("##tracking", TableTrackingToString(tracking).c_str())) {
+      renderingCombo = true;
+      for (int i = 0; i < (int)TableTracking::MAX_ITEM; i++) {
+        TableTracking track = (TableTracking)i;
+        const bool is_selected = (tracking == track);
+        char buf[32] = { 0 }; 
+        switch (track) {
+          case TableTracking::Untracked: {
+            if (ImGui::Selectable("Untracked", is_selected)) {
+              tracking = track;
+            }
+            break;
+          }
+          case TableTracking::Income: {
+            if (ImGui::Selectable("Income", is_selected)) {
+              tracking = track;
+            }
+            break;
+          }
+          case TableTracking::Expenses: {
+            if (ImGui::Selectable("Expenses", is_selected)) {
+              tracking = track;
+            }
+            break;
+          }
+          default: {
+            continue;
+          }
+        }
+
+        // Set the initial focus when opening the combo (keyboard navigation)
+        if (is_selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    } else {
+      renderingCombo = false;
+    }
+
+    bool disabled = false;
+
+    if (Ledger::Get().GetTables().find(accountID) != Ledger::Get().GetTables().end() || accountID == 0) { // account already exists
+      ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Pure Red (Normal)
+      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Lighter Red (Hovered)
+      ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.0f, 0.0f, 1.0f)); // Darker Red (Clicked)
+      disabled = true;
+    }
+
+    ImGui::BeginDisabled(disabled);
+
+    if (ImGui::Button("Confirm")) {
+
+      table.SetName(nameBuf);
+
+      table.SetCreditAccount(creditAcc);
+      table.SetTracking(tracking);
+
+      // Done last in case accessing the table after being removed causes issues
+      if (accountID != table.GetAccountNumber()) {
+        CreateTable(accountID, nameBuf, creditAcc, tracking);
+
+        AccountTable *newTable = &m_Tables.at(accountID);
+
+        LoadEntriesToTable(newTable, *table.GetCreditTable());
+        LoadEntriesToTable(newTable, *table.GetDebitTable());
+
+        RemoveTable(table.GetAccountNumber());
+      }
+
+      m_RenderPopup = RenderPopup::NONE;
+      name.clear();
+      memset(&nameBuf, 0, sizeof(strlen(nameBuf)));
+      memset(&accountID, 0, sizeof(int));
+      memset(&creditAcc, 0, sizeof(bool));
+      memset(&tracking, 0, sizeof(TableTracking));
+      editingTable = false;
+
+      m_ContextDirty = true;
+    }
+
+    ImGui::EndDisabled();
+
+    if (disabled)
+      ImGui::PopStyleColor(3);
+
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+      name = table.GetName();
+      snprintf(nameBuf, sizeof(nameBuf), "%s", name.c_str());
+      accountID = table.GetAccountNumber();
+      creditAcc = table.IsCreditAccount();
+      tracking = table.GetTracking();
+      editingTable = false;
+    }
+
+    
+    if (ImGui::Button("Delete")) {
+      m_RenderPopup = RenderPopup::NONE;
+
+      name.clear();
+      memset(&accountID, 0, sizeof(int));
+      memset(&creditAcc, 0, sizeof(bool));
+      memset(&tracking, 0, sizeof(TableTracking));
+    }
+
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("WARNING - Pressing this will delete this table!");
+    }
   }
 
   ImGui::End();
