@@ -7,9 +7,9 @@ src/FerretApp/Layer/FerretLayer.cpp
 src/FerretApp/FileDialog/FileDialog.cpp
 src/FerretApp/Ledger/Entry.cpp
 src/FerretApp/Ledger/Ledger.cpp
-src/FerretApp/Ledger/Entrypoint.cpp
 src/FerretApp/Ledger/Table.cpp
 src/FerretApp/Ledger/EntryTable.cpp
+src/FerretApp/Core/Entrypoint.cpp
 src/FerretApp/Core/Serializer.cpp
 src/FerretApp/Utils/Utils.h
 src/FerretApp/Layer/FerretLayer.h

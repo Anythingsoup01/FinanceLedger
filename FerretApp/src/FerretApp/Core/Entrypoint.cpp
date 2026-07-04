@@ -20,7 +20,7 @@ Ferret::Application *Ferret::CreateApplication(int argc, char **argv) {
 
       ImGui::EndMenu();
     }
-  });
+  }); 
 
   return app;
 }
