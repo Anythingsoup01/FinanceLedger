@@ -193,7 +193,7 @@ ImGui::TableSetColumnIndex(columnIndex);
       ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
     }
 
-    ImGui::TableHeader(buf);
+    ImGui::TextUnformatted(buf);
 
     ImGui::EndTable();
   }

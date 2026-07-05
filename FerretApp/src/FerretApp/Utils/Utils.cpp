@@ -19,7 +19,7 @@ void HeaderCentered(uint32_t columnCount) {
       ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
     }
 
-    ImGui::TableHeader(header_name);
+    ImGui::TextUnformatted(header_name);
   }
 }
 

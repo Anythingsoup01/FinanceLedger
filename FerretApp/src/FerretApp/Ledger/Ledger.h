@@ -19,7 +19,6 @@ public:
   // Renders all tables
   void OnRenderData();
 
-
   // Get's all tables we have stored
   const std::map<int, AccountTable> &GetTables() const { return m_Tables; }
 

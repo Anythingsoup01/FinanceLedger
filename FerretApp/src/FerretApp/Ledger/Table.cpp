@@ -53,11 +53,12 @@ void AccountTable::Draw() {
   }
 
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
-  ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+  ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
 
   char buf[32] = {0};
   snprintf(buf, sizeof(buf), "##%s-%i-root", m_Name.c_str(), m_Number);
   if (ImGui::BeginTable(buf, 1, flags, m_TableSize)) {
+
 
     sprintf(buf, "%s (%i)", m_Name.c_str(), m_Number);
     ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, m_TableSize.x);
@@ -88,6 +89,10 @@ void AccountTable::Draw() {
 
     ImGui::TableHeader(header_name);
 
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Double Click to view Details");
+    }
+
     ImGui::TableSetColumnIndex(0);
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
       Ledger::Get().ViewTable(m_Number);
@@ -103,15 +108,20 @@ void AccountTable::Draw() {
 
     snprintf(buf, sizeof(buf), "##%s-%i-entries", m_Name.c_str(), m_Number);
     if (ImGui::BeginTable(buf, 2, flags, tableSize)) {
-      ImGui::TableSetupColumn("Debit", ImGuiTableColumnFlags_WidthFixed, tableSize.x / 2.0);
-      ImGui::TableSetupColumn("Credit", ImGuiTableColumnFlags_WidthFixed, tableSize.x / 2.0);
+      ImGui::TableSetupColumn("Debit", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_NoHeaderLabel, tableSize.x / 2.0);
+      ImGui::TableSetupColumn("Credit", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_NoHeaderLabel, tableSize.x / 2.0);
 
       Utils::HeaderCentered(2);
 
       ImGui::TableNextRow();
 
-      if (m_DebitTable.RenderTable("Debit", 0) || m_CreditTable.RenderTable("Credit", 1))
+      if (m_DebitTable.RenderTable("Debit", 0)) {
         ResizeTable();
+      }
+
+      if (m_CreditTable.RenderTable("Credit", 1)) {
+        ResizeTable();
+      }
 
       ImGui::TableNextRow();
 
