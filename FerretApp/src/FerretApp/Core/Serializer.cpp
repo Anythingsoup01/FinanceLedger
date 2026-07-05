@@ -1,5 +1,8 @@
 #include "Serializer.h"
 
+#include "FerretApp/Ledger/Ledger.h"
+#include "FerretApp/Statements/Statements.h"
+
 #include <yaml-cpp/yaml.h>
 
 namespace Ferret {
@@ -95,6 +98,9 @@ bool TableSerializer::Deserialize(std::map<int, AccountTable> *tables, const std
       int accountId = entry["AccountID"].as<int>();
       float amount = entry["Amount"].as<float>();
       accountTable.InsertEntry(false, date, accountId, amount, false);
+      if (accountId == Ledger::GetRetainedEarningsTable().GetAccountNumber()) {
+        Statements::UpdateBeginningBalance(amount);
+      }
     }
     auto creditEntries = account["CreditEntries"];
     for (auto entry : creditEntries) {

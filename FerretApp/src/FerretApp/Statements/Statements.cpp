@@ -8,7 +8,8 @@ namespace Ferret {
 
 void Statements::OnRenderData() {
   OnRenderIncome();
-  //OnRenderRetainedEarnings();
+  ImGui::SameLine();
+  OnRenderRetainedEarnings();
 }
 
 void Statements::NewDataAvailable() {
@@ -148,6 +149,7 @@ void Statements::OnRenderIncome() {
 }
 
 void Statements::OnRenderRetainedEarnings() {
+
 
 }
 

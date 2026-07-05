@@ -3,6 +3,7 @@
 #include "FerretApp/Utils/Utils.h"
 
 #include "Ledger.h"
+#include "FerretApp/Statements/Statements.h"
 
 extern ImVec2 g_EntrySize;
 
@@ -30,6 +31,11 @@ bool EntryTable::InsertEntryData(const Date &date, const int &account, const flo
 
   // Increment the total value of the table
   m_TotalValue += amount;
+  if (!m_CreditTable &&
+      Ledger::GetTables().find(m_AccountID) != Ledger::GetTables().end() &&
+      !Ledger::GetTables().at(m_AccountID).IsCreditAccount()) {
+    Statements::UpdateBeginningBalance(amount);
+  }
 
   return true;
 }
@@ -41,7 +47,12 @@ void EntryTable::RemoveEntry(int id) {
   }
 
   // Decrement the amount before erasing
-  m_TotalValue -= m_Entries[id].GetAmount();
+  const Entry &entry = m_Entries[id];
+  m_TotalValue -= entry.GetAmount();
+  if (!m_CreditTable && !Ledger::GetTables().at(m_AccountID).IsCreditAccount()) {
+    Statements::UpdateBeginningBalance(-entry.GetAmount());
+  }
+
 
   m_Entries.erase(id);
 }
@@ -114,9 +125,23 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
   ImGui::SetNextItemWidth(-FLT_MIN);
   sprintf(buf, "##NewAcc%s", tableName.c_str());
   auto &tables = Ledger::GetTables();
+  const AccountTable &retainedEarnigns = Ledger::GetRetainedEarningsTable();
   char accBuf[32] = { 0 };
-  snprintf(accBuf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? Ledger::GetTables().at(m_AccountBuffer).GetAccountNumber() : 0);
+  if (m_AccountBuffer == retainedEarnigns.GetAccountNumber()) {
+    snprintf(accBuf, sizeof(accBuf), "Retained");
+  } else {
+    snprintf(accBuf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? Ledger::GetTables().at(m_AccountBuffer).GetAccountNumber() : 0);
+  }
   if (ImGui::BeginCombo(buf, accBuf)) {
+    if (m_AccountBuffer != retainedEarnigns.GetAccountNumber()) {
+      const bool is_selected = (m_AccountBuffer == retainedEarnigns.GetAccountNumber());
+      if (ImGui::Selectable("Retained", is_selected)) {
+        m_AccountBuffer = retainedEarnigns.GetAccountNumber();
+      }
+
+      if (is_selected)
+        ImGui::SetItemDefaultFocus();
+    }
     for (auto &[id, table] : tables) {
       if (id == m_AccountID) { // We can't add or remove money into the same account
         continue;
@@ -144,7 +169,7 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     submitted = true;
   }
 
-  if (submitted && InsertEntryData(m_DateBuffer, m_AccountBuffer, m_AmountBuffer, true)) {
+  if (submitted && InsertEntryData(m_DateBuffer, m_AccountBuffer, m_AmountBuffer, m_AccountBuffer != retainedEarnigns.GetAccountNumber())) {
     memset(&m_DateBuffer, 0, sizeof(Date));
     memset(&m_AccountBuffer, 0, sizeof(int));
     memset(&m_AmountBuffer, 0, sizeof(float));

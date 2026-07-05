@@ -1,5 +1,7 @@
 #include "Entry.h"
 
+#include "FerretApp/Ledger/Ledger.h"
+
 #include <imgui.h>
 
 namespace Ferret {
@@ -17,7 +19,14 @@ bool Entry::RenderEntry() {
   }
 
   ImGui::TableSetColumnIndex(1);
-  ImGui::Text("%i", m_Account);
+  char buf[32];
+  const int &retainedEarningsID = Ledger::GetRetainedEarningsTable().GetAccountNumber();
+  if (retainedEarningsID == m_Account) {
+    snprintf(buf, sizeof(buf), "Retained");
+  } else {
+    snprintf(buf, sizeof(buf), "%i", m_Account);
+  }
+  ImGui::TextUnformatted(buf);
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Double Click to view Details");
 
