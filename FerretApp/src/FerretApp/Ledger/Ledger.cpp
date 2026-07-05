@@ -40,7 +40,7 @@ void Ledger::OnRenderData() {
     rowTableCount++;
 
     if (!table.GetNext() || (
-      Utils::GetPositiveDigitCount(id) != Utils::GetPositiveDigitCount(table.GetNext()->GetAccountNumber())
+      Utils::GetDigitCount(id) != Utils::GetDigitCount(table.GetNext()->GetAccountNumber())
       || Utils::GetTopDigit(id) != Utils::GetTopDigit(table.GetNext()->GetAccountNumber()))) {
 
       if (g_GenericTableSize.x * (rowTableCount + 1) > ImGui::GetMainViewport()->Size.x) {

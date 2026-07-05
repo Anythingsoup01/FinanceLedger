@@ -14,7 +14,7 @@ enum class RenderPopup {
 class Ledger {
 public:
   // Renders all tables
-  void OnRenderData();
+  static void OnRenderData();
 
   // Get's all tables we have stored
   static const std::map<int, AccountTable> &GetTables() { return m_Tables; }

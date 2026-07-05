@@ -19,7 +19,11 @@ void HeaderCentered(uint32_t columnCount) {
       ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
     }
 
-    ImGui::TextUnformatted(header_name);
+    if (strncmp(header_name, "##EmptyHeader", strlen("##EmptyHeader")) != 0) {
+      ImGui::TextUnformatted(header_name);
+    } else {
+      ImGui::Dummy(ImVec2(0,0));
+    }
   }
 }
 
@@ -30,12 +34,19 @@ bool IsSubitted() {
   return ImGui::IsKeyDown(ImGuiKey_Enter) || ImGui::IsKeyDown(ImGuiKey_KeypadEnter);
 }
 
-// Returns the digit count; Used for account sorting
-int GetPositiveDigitCount(const int &val) {
+int GetDigitCount(const int &val) {
+  if (val == 0) {
+    return 1;
+  }
+
   int digits = 0;
   int tmp = val;
+  if (tmp < 0) {
+    tmp *= -1;
+    digits++; // Accounting for the '-' sign
+  }
   while (true) {
-    if (tmp < 10 && tmp > 0) {
+    if (tmp < 10) {
       digits++;
       break;
     }
@@ -45,11 +56,16 @@ int GetPositiveDigitCount(const int &val) {
   return digits;
 }
 
-// Gets the very first int from a val; val = 123 : return 1
 int GetTopDigit(const int &val) {
+  if (val == 0) {
+    return 0;
+  }
   int tmp = val;
+  if (tmp < 0) {
+    tmp *= -1;
+  }
   while (true) {
-    if (tmp < 10 && tmp > 0) {
+    if (tmp < 10) {
       break;
     }
     tmp /= 10;
