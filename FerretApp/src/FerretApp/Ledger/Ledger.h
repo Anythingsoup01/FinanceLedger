@@ -68,12 +68,12 @@ private:
   // TODO: Create a RenderPopup Class / Abstract class so we can assign popups to sections
   static inline RenderPopup m_RenderPopup = RenderPopup::NONE;
 private:
-  static std::map<int, AccountTable> m_Tables;
-  static std::vector<std::string> m_TableNames; // Get's reloaded everytime we call ReloadTables(); Contains a list of all table names (along with the AccountNumber)
+  static inline std::map<int, AccountTable> m_Tables;
+  static inline std::vector<std::string> m_TableNames; // Get's reloaded everytime we call ReloadTables(); Contains a list of all table names (along with the AccountNumber)
 
-  static int m_ViewingTableID; // Used to see which table we are accessing to view
-  static int m_ViewingEntryID; // Used to see which entry is being viewed
-  static bool m_IsViewingCreditEntry; // Used to see if the entry we have selected is credit
+  static inline int m_ViewingTableID; // Used to see which table we are accessing to view
+  static inline int m_ViewingEntryID; // Used to see which entry is being viewed
+  static inline bool m_IsViewingCreditEntry; // Used to see if the entry we have selected is credit
 
   static inline bool m_ContextDirty = false;
 };

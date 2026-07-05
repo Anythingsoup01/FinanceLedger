@@ -68,7 +68,7 @@ void AccountTable::Draw() {
     // TODO: Make the header interactable to display its config for editing and viewing
 
     if (ImGui::Button("X")) {
-      Ledger::Get().RemoveTable(m_Number);
+      Ledger::RemoveTable(m_Number);
     }
     if (ImGui::IsItemHovered())
       ImGui::SetTooltip("Delete Table");
@@ -90,7 +90,7 @@ void AccountTable::Draw() {
 
     ImGui::TableSetColumnIndex(0);
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-      Ledger::Get().ViewTable(m_Number);
+      Ledger::ViewTable(m_Number);
     }
 
 
@@ -201,6 +201,10 @@ void AccountTable::ResizeTable() {
     ? g_EntrySize.y * (creditTableSize + 4)
     : g_EntrySize.y * (debitTableSize + 4)
   );
+}
+
+const float AccountTable::GetBalance() const {
+  return m_CreditAccount ? m_CreditTable.GetTotalValue() - m_DebitTable.GetTotalValue() : m_DebitTable.GetTotalValue() - m_CreditTable.GetTotalValue();
 }
 
 }

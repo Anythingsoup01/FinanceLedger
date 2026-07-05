@@ -66,6 +66,8 @@ public:
   // Used to retrieve entry data
   Entry &GetEntry(const bool &isCredit, const int &entryID);
 
+  const float GetBalance() const;
+
 private:
   // Used by both Draw and DrawIndividual to actually render the table
   void DrawHelper();

@@ -5,6 +5,7 @@
 #include "FerretApp/Utils/Utils.h"
 
 #include "FerretApp/Ledger/Ledger.h"
+#include "FerretApp/Statements/Statements.h"
 
 #include "FerretApp/Core/Serializer.h"
 #include "FerretApp/FileDialog/FileDialog.h"
@@ -125,6 +126,10 @@ void FerretLayer::OnUIRender() {
   switch(m_State) {
     case RenderState::Ledger: {
       Ledger::OnRenderData();
+      break;
+    }
+    case RenderState::Statements: {
+      Statements::OnRenderData();
       break;
     }
     default: break;
