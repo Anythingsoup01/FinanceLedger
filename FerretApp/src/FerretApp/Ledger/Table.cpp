@@ -1,6 +1,9 @@
 #include "Table.h"
 
 #include "Ledger.h"
+#include "FerretApp/Statements/Statements.h"
+
+#include "Ferret/Core/Application.h"
 
 #include "FerretApp/Utils/Utils.h"
 
@@ -43,6 +46,10 @@ void AccountTable::InsertEntry(const bool &isCredit, const Date &date, const int
     m_CreditTable.InsertEntryData(date, accountID, amount, updateOther);
   } else {
     m_DebitTable.InsertEntryData(date, accountID, amount, updateOther);
+  }
+
+  if (m_Tracking == TableTracking::Income || m_Tracking == TableTracking::Expenses) {
+    Application::Get().SubmitToMainThread([](){Statements::NewDataAvailable();});
   }
 }
 

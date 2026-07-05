@@ -9,6 +9,8 @@
 
 #include "FerretApp/Utils/Utils.h"
 
+#include "FerretApp/Statements/Statements.h"
+
 #include <imgui.h>
 
 extern ImVec2 g_EntrySize;
@@ -103,6 +105,9 @@ void Ledger::RemoveTable(const int &tableID) {
 void Ledger::CreateTable(const int &tableID, const std::string &name, const bool &isCredit, const TableTracking &tracking) {
   AccountTable table(name, tableID, isCredit, tracking);
   m_Tables.emplace(std::pair<int, AccountTable>(tableID, table));
+  if (tracking == TableTracking::Income || tracking == TableTracking::Expenses) {
+    Application::Get().SubmitToMainThread([](){Statements::NewDataAvailable();});
+  }
   ReloadTables();
 }
 
@@ -656,6 +661,10 @@ void Ledger::RenderTableDetailsPopup() {
         LoadEntriesToTable(newTable, *table.GetDebitTable());
 
         RemoveTable(table.GetAccountNumber());
+      }
+
+      if (tracking == TableTracking::Income || tracking == TableTracking::Expenses) {
+        Application::Get().SubmitToMainThread([](){Statements::NewDataAvailable();});
       }
 
       m_RenderPopup = RenderPopup::NONE;

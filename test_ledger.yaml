@@ -4,14 +4,14 @@ Accounts:
     IsCreditAccount: false
     Tracking: Untracked
     DebitEntries:
-      - Month: 12
-        Day: 26
+      - Month: 26
+        Day: 12
         Year: 2026
         AccountID: 201
         Amount: 500
     CreditEntries:
-      - Month: 12
-        Day: 26
+      - Month: 26
+        Day: 12
         Year: 2026
         AccountID: 301
         Amount: 250
@@ -22,18 +22,26 @@ Accounts:
     DebitEntries:
       []
     CreditEntries:
-      - Month: 12
-        Day: 26
+      - Month: 26
+        Day: 12
         Year: 2026
         AccountID: 101
         Amount: 500
+  - AccountNumber: 202
+    AccountName: Test Income 2
+    IsCreditAccount: true
+    Tracking: Income
+    DebitEntries:
+      []
+    CreditEntries:
+      []
   - AccountNumber: 301
     AccountName: Test Expense
     IsCreditAccount: false
     Tracking: Expenses
     DebitEntries:
-      - Month: 12
-        Day: 26
+      - Month: 26
+        Day: 12
         Year: 2026
         AccountID: 101
         Amount: 250
