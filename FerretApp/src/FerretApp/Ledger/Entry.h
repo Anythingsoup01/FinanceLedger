@@ -8,7 +8,7 @@ struct Date {
   int Year = 0;
 
   Date() = default;
-  Date(int day, int month, int year)
+  Date(int month, int day, int year)
     : Day(day), Month(month), Year(year) {}
 
   int GetDateID() { return Day + Month + Year; }

@@ -356,7 +356,7 @@ void Ledger::RenderEntryDetailsPopup() {
       m_RenderPopup = RenderPopup::NONE;
 
       AccountTable *otherTable = &m_Tables.at(entryData.GetAccountID());
-      int otherEntryID = entryData.GetDate().GetDateID() + m_ViewingTableID;
+      int otherEntryID = Utils::CalculateEntryID(entryData.GetDate(), m_ViewingTableID);
       otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
       table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
 
@@ -402,7 +402,11 @@ void Ledger::RenderEntryDetailsPopup() {
         ImGui::Text("%i/%i/%i", entryData.GetDate().Month, entryData.GetDate().Day, entryData.GetDate().Year);
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%i", entryData.GetAccountID());
+        if (entryData.GetAccountID() == m_RetainedEarningsTable.GetAccountNumber()) {
+          ImGui::Text("Retained");
+        } else {
+          ImGui::Text("%i", entryData.GetAccountID());
+        }
 
         ImGui::TableSetColumnIndex(2);
         ImGui::Text("$%.2f", entryData.GetAmount());
@@ -423,9 +427,22 @@ void Ledger::RenderEntryDetailsPopup() {
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
         char accBuf[32] = {0};
-        snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? m_Tables.at(accountID).GetAccountNumber() : 0);
+        if (accountID == m_RetainedEarningsTable.GetAccountNumber()) {
+          snprintf(accBuf, sizeof(accBuf), "Retained");
+        } else {
+          snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? m_Tables.at(accountID).GetAccountNumber() : 0);
+        }
         if (ImGui::BeginCombo("##EditAccountID", accBuf)) {
           renderingCombo = true;
+          if (accountID != m_RetainedEarningsTable.GetAccountNumber()) {
+            const bool is_selected = (accountID == m_RetainedEarningsTable.GetAccountNumber());
+            if (ImGui::Selectable("Retained", is_selected)) {
+              accountID = m_RetainedEarningsTable.GetAccountNumber();
+            }
+
+            if (is_selected)
+              ImGui::SetItemDefaultFocus();
+          }
           for (auto &[id, table] : m_Tables) {
             if (id == m_ViewingTableID) { // We can't add or remove money into the same account
               continue;
@@ -483,7 +500,7 @@ void Ledger::RenderEntryDetailsPopup() {
   } else {
     if (ImGui::Button("Confirm")) {
       AccountTable *otherTable = &m_Tables.at(entryData.GetAccountID());
-      int otherEntryID = entryData.GetDate().GetDateID() + m_ViewingTableID;
+      int otherEntryID = Utils::CalculateEntryID(entryData.GetDate(), m_ViewingTableID);
       otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
 
       table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
@@ -541,16 +558,13 @@ void Ledger::RenderTableDetailsPopup() {
 
   static bool editingTable = false;
 
-  static std::string name = table.GetName();
   static char nameBuf[32] = {0};
-  snprintf(nameBuf, sizeof(nameBuf), "%s", name.c_str());
-  static int accountID = table.GetAccountNumber();
-  static bool creditAcc = table.IsCreditAccount();
-  static TableTracking tracking = table.GetTracking();
+  static int accountID = 0;
+  static bool creditAcc = false;
+  static TableTracking tracking = TableTracking::Untracked;
 
   if (accountID == 0) { // Memset will make these 0, since they are static we need to reset it
-    name = table.GetName();
-    snprintf(nameBuf, sizeof(nameBuf), "%s", name.c_str());
+    snprintf(nameBuf, sizeof(nameBuf), "%s", table.GetName().c_str());
     accountID = table.GetAccountNumber();
     creditAcc = table.IsCreditAccount();
     tracking = table.GetTracking();
@@ -574,7 +588,6 @@ void Ledger::RenderTableDetailsPopup() {
     ImGui::SameLine();
     if (ImGui::Button("Close")) {
       m_RenderPopup = RenderPopup::NONE;
-      name.clear();
       memset(&nameBuf, 0, sizeof(strlen(nameBuf)));
       memset(&accountID, 0, sizeof(int));
       memset(&creditAcc, 0, sizeof(bool));
@@ -668,7 +681,6 @@ void Ledger::RenderTableDetailsPopup() {
       }
 
       m_RenderPopup = RenderPopup::NONE;
-      name.clear();
       memset(&nameBuf, 0, sizeof(strlen(nameBuf)));
       memset(&accountID, 0, sizeof(int));
       memset(&creditAcc, 0, sizeof(bool));
@@ -686,8 +698,7 @@ void Ledger::RenderTableDetailsPopup() {
 
     ImGui::SameLine();
     if (ImGui::Button("Cancel")) {
-      name = table.GetName();
-      snprintf(nameBuf, sizeof(nameBuf), "%s", name.c_str());
+      snprintf(nameBuf, sizeof(nameBuf), "%s", table.GetName().c_str());
       accountID = table.GetAccountNumber();
       creditAcc = table.IsCreditAccount();
       tracking = table.GetTracking();
@@ -698,7 +709,6 @@ void Ledger::RenderTableDetailsPopup() {
     if (ImGui::Button("Delete")) {
       m_RenderPopup = RenderPopup::NONE;
 
-      name.clear();
       memset(&accountID, 0, sizeof(int));
       memset(&creditAcc, 0, sizeof(bool));
       memset(&tracking, 0, sizeof(TableTracking));

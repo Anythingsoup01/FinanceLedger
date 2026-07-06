@@ -15,7 +15,8 @@ bool EntryTable::InsertEntryData(const Date &date, const int &account, const flo
       account == 0 || amount == 0) {
     return false;
   }
-  int id = date.Day + date.Month + date.Year + account;
+
+  int id = Utils::CalculateEntryID(date, account);
 
   // Entry already exists
   if (m_Entries.find(id) != m_Entries.end()) {

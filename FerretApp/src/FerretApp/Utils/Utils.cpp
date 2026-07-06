@@ -73,5 +73,11 @@ int GetTopDigit(const int &val) {
   return tmp;
 }
 
+int CalculateEntryID(const Ferret::Date &date, const int &accountID) {
+  const int LARGEST_ACCOUNT_NUMBER = 999999;
+  const int DAY_WEIGHT = LARGEST_ACCOUNT_NUMBER + 1;
+  return (date.Day * DAY_WEIGHT) + date.Month + date.Year + LARGEST_ACCOUNT_NUMBER - accountID;
+}
+
 
 }
