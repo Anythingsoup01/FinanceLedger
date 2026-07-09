@@ -360,6 +360,11 @@ void Ledger::RenderEntryDetailsPopup() {
       otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
       table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
 
+      if (table.GetTracking() == TableTracking::Expenses || table.GetTracking() == TableTracking::Income
+          || otherTable->GetTracking() == TableTracking::Expenses || otherTable->GetTracking() == TableTracking::Income) {
+        Statements::NewDataAvailable();
+      }
+
       memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
