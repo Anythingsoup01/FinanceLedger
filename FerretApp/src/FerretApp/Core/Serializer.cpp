@@ -95,9 +95,12 @@ bool TableSerializer::Deserialize(std::map<int, AccountTable> *tables, const std
         entry["Year"].as<int>()
       );
       int accountId = entry["AccountID"].as<int>();
+      if (accountId == -100) { // Old ID
+        accountId = FerretLayer::Get().GetLedger().GetRetainedEarningsID();
+      }
       float amount = entry["Amount"].as<float>();
       accountTable.InsertEntry(false, date, accountId, amount, false);
-      if (accountId == FerretLayer::Get().GetLedger().GetRetainedEarningsTable().GetAccountNumber()) {
+      if (accountId == FerretLayer::Get().GetLedger().GetRetainedEarningsID()) {
         FerretLayer::Get().GetStatements().UpdateBeginningBalance(amount);
       }
     }

@@ -313,7 +313,7 @@ void Popup::RenderEntryDetailsPopup() {
 
       ImGui::TableNextRow();
 
-      static int retainedEarningsTableID = FerretLayer::Get().GetLedger().GetRetainedEarningsTable().GetAccountNumber();
+      static int retainedEarningsTableID = FerretLayer::Get().GetLedger().GetRetainedEarningsID();
 
       if (!editingEntry) {
         ImGui::TableSetColumnIndex(0);
@@ -352,15 +352,6 @@ void Popup::RenderEntryDetailsPopup() {
         }
         if (ImGui::BeginCombo("##EditAccountID", accBuf)) {
           renderingCombo = true;
-          if (accountID != retainedEarningsTableID) {
-            const bool is_selected = (accountID == retainedEarningsTableID);
-            if (ImGui::Selectable("Retained", is_selected)) {
-              accountID = retainedEarningsTableID;
-            }
-
-            if (is_selected)
-              ImGui::SetItemDefaultFocus();
-          }
           for (auto &[id, table] : FerretLayer::Get().GetLedger().GetTables()) {
             if (id == m_ViewingTableID) { // We can't add or remove money into the same account
               continue;
@@ -368,7 +359,11 @@ void Popup::RenderEntryDetailsPopup() {
 
             const bool is_selected = (accountID == id);
             char buf[32] = { 0 }; 
-            snprintf(buf, sizeof(buf), "%i", table.GetAccountNumber());
+            if (id == retainedEarningsTableID) {
+              snprintf(accBuf, sizeof(accBuf), "Retained");
+            } else {
+              snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? FerretLayer::Get().GetLedger().GetTables().at(accountID).GetAccountNumber() : 0);
+            }
             if (ImGui::Selectable(buf, is_selected)) {
               accountID = id;
             }
@@ -417,12 +412,14 @@ void Popup::RenderEntryDetailsPopup() {
 
   } else {
     if (ImGui::Button("Confirm")) {
-      AccountTable *otherTable = &FerretLayer::Get().GetLedger().GetTables().at(entryData.GetAccountID());
-      int otherEntryID = Utils::CalculateEntryID(entryData.GetDate(), m_ViewingTableID);
-      otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
+      if (entryData.GetAccountID() != FerretLayer::Get().GetLedger().GetRetainedEarningsID()) {
+        AccountTable *otherTable = &FerretLayer::Get().GetLedger().GetTables().at(entryData.GetAccountID());
+        int otherEntryID = Utils::CalculateEntryID(entryData.GetDate(), m_ViewingTableID);
+        otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
+      }
 
       table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
-      table.InsertEntry(m_IsViewingCreditEntry, date, accountID, amount, true);
+      table.InsertEntry(m_IsViewingCreditEntry, date, accountID, amount, accountID != FerretLayer::Get().GetLedger().GetRetainedEarningsID());
 
       memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));

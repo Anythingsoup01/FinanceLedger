@@ -20,7 +20,7 @@ bool Entry::RenderEntry() {
 
   ImGui::TableSetColumnIndex(1);
   char buf[32];
-  const int &retainedEarningsID = FerretLayer::Get().GetLedger().GetRetainedEarningsTable().GetAccountNumber();
+  const int &retainedEarningsID = FerretLayer::Get().GetLedger().GetRetainedEarningsID();
   if (retainedEarningsID == m_Account) {
     snprintf(buf, sizeof(buf), "Retained");
   } else {

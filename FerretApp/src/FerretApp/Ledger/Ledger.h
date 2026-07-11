@@ -16,7 +16,7 @@ public:
   // Renders all tables
   void OnRenderData();
 
-  const AccountTable &GetRetainedEarningsTable() { return m_RetainedEarningsTable; }
+  const int &GetRetainedEarningsID() { return m_RetainedEarningsID; }
 
   // Get's all tables we have stored
   const std::map<int, AccountTable> &GetTables() const { return m_Tables; }
@@ -46,7 +46,7 @@ private:
   std::map<int, AccountTable> m_Tables;
   std::vector<std::string> m_TableNames; // Get's reloaded everytime we call ReloadTables(); Contains a list of all table names (along with the AccountNumber)
 
-  AccountTable m_RetainedEarningsTable = AccountTable("Retained Earnings", -100, false, TableTracking::Untracked); // This is used to track any retained earnings creditted to a non credit table, however it can still be utilized as a tag for credit tables
+  int m_RetainedEarningsID = 99000;
 private:
   friend class Popup;
 };
