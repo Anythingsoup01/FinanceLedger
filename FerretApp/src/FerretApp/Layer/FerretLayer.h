@@ -7,6 +7,7 @@
 
 #include "FerretApp/Ledger/Ledger.h"
 #include "FerretApp/Statements/Statements.h"
+#include "FerretApp/Journal/Journal.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -30,6 +31,9 @@ public:
 
   const Statements &GetStatements() const { return m_Statements; }
   Statements &GetStatements() { return m_Statements; }
+
+  const Journal &GetJournal() const { return m_Journal; }
+  Journal &GetJournal() { return m_Journal; }
 
 private:
   // Opens a save file from a given path
@@ -68,6 +72,7 @@ private:
   // TODO: If we ever move toward multi ledger updating, with complete journal entries and statements, we need a class / struct to contain them together
   Ledger m_Ledger;
   Statements m_Statements;
+  Journal m_Journal;
   bool m_ContextDirty = false;
 
   inline static FerretLayer *s_Instance = nullptr;

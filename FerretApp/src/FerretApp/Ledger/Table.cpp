@@ -53,6 +53,11 @@ void AccountTable::InsertEntry(const bool &isCredit, const Date &date, const int
   if (m_Tracking == TableTracking::Income || m_Tracking == TableTracking::Expenses) {
     Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewDataAvailable();});
   }
+
+  if (isCredit) {
+    int id = m_Number;
+    Application::Get().SubmitToMainThread([id, date](){FerretLayer::Get().GetJournal().NewDataAvailable(date, id);});
+  }
 }
 
 void AccountTable::Draw() {

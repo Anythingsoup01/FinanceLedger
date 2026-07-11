@@ -7,6 +7,7 @@ src/FerretApp/Utils/Utils.cpp
 src/FerretApp/Layer/FerretLayer.cpp
 src/FerretApp/FileDialog/FileDialog.cpp
 src/FerretApp/Statements/Statements.cpp
+src/FerretApp/Journal/Journal.cpp
 src/FerretApp/Ledger/Entry.cpp
 src/FerretApp/Ledger/Ledger.cpp
 src/FerretApp/Ledger/Table.cpp
@@ -18,6 +19,7 @@ src/FerretApp/Utils/Utils.h
 src/FerretApp/Layer/FerretLayer.h
 src/FerretApp/FileDialog/FileDialog.h
 src/FerretApp/Statements/Statements.h
+src/FerretApp/Journal/Journal.h
 src/FerretApp/Ledger/Table.h
 src/FerretApp/Ledger/Ledger.h
 src/FerretApp/Ledger/EntryTable.h
