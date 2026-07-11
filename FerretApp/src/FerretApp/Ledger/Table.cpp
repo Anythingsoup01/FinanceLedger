@@ -1,7 +1,9 @@
 #include "Table.h"
 
-#include "Ledger.h"
 #include "FerretApp/Statements/Statements.h"
+
+#include "FerretApp/Layer/FerretLayer.h"
+#include "FerretApp/Popup/Popup.h"
 
 #include "Ferret/Core/Application.h"
 
@@ -49,7 +51,7 @@ void AccountTable::InsertEntry(const bool &isCredit, const Date &date, const int
   }
 
   if (m_Tracking == TableTracking::Income || m_Tracking == TableTracking::Expenses) {
-    Application::Get().SubmitToMainThread([](){Statements::NewDataAvailable();});
+    Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewDataAvailable();});
   }
 }
 
@@ -76,7 +78,7 @@ void AccountTable::Draw() {
     // TODO: Make the header interactable to display its config for editing and viewing
 
     if (ImGui::Button("X")) {
-      Ledger::RemoveTable(m_Number);
+      FerretLayer::Get().GetLedger().RemoveTable(m_Number);
     }
     if (ImGui::IsItemHovered())
       ImGui::SetTooltip("Delete Table");
@@ -102,7 +104,7 @@ void AccountTable::Draw() {
 
     ImGui::TableSetColumnIndex(0);
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-      Ledger::ViewTable(m_Number);
+      Popup::ViewTable(m_Number);
     }
 
 

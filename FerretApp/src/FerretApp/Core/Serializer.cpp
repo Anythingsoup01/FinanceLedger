@@ -1,7 +1,6 @@
 #include "Serializer.h"
 
-#include "FerretApp/Ledger/Ledger.h"
-#include "FerretApp/Statements/Statements.h"
+#include "FerretApp/Layer/FerretLayer.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -98,8 +97,8 @@ bool TableSerializer::Deserialize(std::map<int, AccountTable> *tables, const std
       int accountId = entry["AccountID"].as<int>();
       float amount = entry["Amount"].as<float>();
       accountTable.InsertEntry(false, date, accountId, amount, false);
-      if (accountId == Ledger::GetRetainedEarningsTable().GetAccountNumber()) {
-        Statements::UpdateBeginningBalance(amount);
+      if (accountId == FerretLayer::Get().GetLedger().GetRetainedEarningsTable().GetAccountNumber()) {
+        FerretLayer::Get().GetStatements().UpdateBeginningBalance(amount);
       }
     }
     auto creditEntries = account["CreditEntries"];

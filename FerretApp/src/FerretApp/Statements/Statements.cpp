@@ -1,6 +1,7 @@
 #include "Statements.h"
 
-#include "FerretApp/Ledger/Ledger.h"
+#include "FerretApp/Ledger/Table.h"
+#include "FerretApp/Layer/FerretLayer.h"
 
 #include "FerretApp/Utils/Utils.h"
 
@@ -22,7 +23,7 @@ void Statements::NewDataAvailable() {
   int maxAccountDigitCount = 0;
   int maxAmountDigitCount = 0;
 
-  for (auto &[id, table] : Ledger::GetTables()) {
+  for (auto &[id, table] : FerretLayer::Get().GetLedger().GetTables()) {
     switch (table.GetTracking()) {
       case TableTracking::Income: {
         m_IncomeAccounts.push_back({table.GetName(), table.GetAccountNumber(), table.GetBalance()});

@@ -2,8 +2,10 @@
 
 #include "FerretApp/Utils/Utils.h"
 
-#include "Ledger.h"
 #include "FerretApp/Statements/Statements.h"
+
+#include "FerretApp/Layer/FerretLayer.h"
+#include "FerretApp/Popup/Popup.h"
 
 extern ImVec2 g_EntrySize;
 
@@ -28,14 +30,14 @@ bool EntryTable::InsertEntryData(const Date &date, const int &account, const flo
   m_Entries.emplace(std::pair<int, Entry>(id, data));
 
   if (updateOther)
-    Ledger::SubmitEntryDataToTable(account, !m_CreditTable, date, m_AccountID, amount);
+    FerretLayer::Get().GetLedger().SubmitEntryDataToTable(account, !m_CreditTable, date, m_AccountID, amount);
 
   // Increment the total value of the table
   m_TotalValue += amount;
   if (!m_CreditTable &&
-      Ledger::GetTables().find(m_AccountID) != Ledger::GetTables().end() &&
-      !Ledger::GetTables().at(m_AccountID).IsCreditAccount()) {
-    Statements::UpdateBeginningBalance(amount);
+      FerretLayer::Get().GetLedger().GetTables().find(m_AccountID) != FerretLayer::Get().GetLedger().GetTables().end() &&
+      !FerretLayer::Get().GetLedger().GetTables().at(m_AccountID).IsCreditAccount()) {
+    FerretLayer::Get().GetStatements().UpdateBeginningBalance(amount);
   }
 
   return true;
@@ -50,8 +52,8 @@ void EntryTable::RemoveEntry(int id) {
   // Decrement the amount before erasing
   const Entry &entry = m_Entries[id];
   m_TotalValue -= entry.GetAmount();
-  if (!m_CreditTable && !Ledger::GetTables().at(m_AccountID).IsCreditAccount()) {
-    Statements::UpdateBeginningBalance(-entry.GetAmount());
+  if (!m_CreditTable && !FerretLayer::Get().GetLedger().GetTables().at(m_AccountID).IsCreditAccount()) {
+    FerretLayer::Get().GetStatements().UpdateBeginningBalance(-entry.GetAmount());
   }
 
 
@@ -96,7 +98,7 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     for (auto &[id, entry] : m_Entries) {
       ImGui::TableNextRow();
       if (entry.RenderEntry())
-        Ledger::ViewEntry(m_AccountID, m_CreditTable, id);
+        Popup::ViewEntry(m_AccountID, id, m_CreditTable);
     }
   }
 
@@ -125,19 +127,19 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
   ImGui::TableSetColumnIndex(1);
   ImGui::SetNextItemWidth(-FLT_MIN);
   sprintf(buf, "##NewAcc%s", tableName.c_str());
-  auto &tables = Ledger::GetTables();
-  const AccountTable &retainedEarnigns = Ledger::GetRetainedEarningsTable();
+  auto &tables = FerretLayer::Get().GetLedger().GetTables();
+  static int retainedEarnignsID = FerretLayer::Get().GetLedger().GetRetainedEarningsTable().GetAccountNumber();
   char accBuf[32] = { 0 };
-  if (m_AccountBuffer == retainedEarnigns.GetAccountNumber()) {
+  if (m_AccountBuffer == retainedEarnignsID) {
     snprintf(accBuf, sizeof(accBuf), "Retained");
   } else {
-    snprintf(accBuf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? Ledger::GetTables().at(m_AccountBuffer).GetAccountNumber() : 0);
+    snprintf(accBuf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? tables.at(m_AccountBuffer).GetAccountNumber() : 0);
   }
   if (ImGui::BeginCombo(buf, accBuf)) {
-    if (m_AccountBuffer != retainedEarnigns.GetAccountNumber()) {
-      const bool is_selected = (m_AccountBuffer == retainedEarnigns.GetAccountNumber());
+    if (m_AccountBuffer != retainedEarnignsID) {
+      const bool is_selected = (m_AccountBuffer == retainedEarnignsID);
       if (ImGui::Selectable("Retained", is_selected)) {
-        m_AccountBuffer = retainedEarnigns.GetAccountNumber();
+        m_AccountBuffer = retainedEarnignsID;
       }
 
       if (is_selected)
@@ -170,11 +172,11 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     submitted = true;
   }
 
-  if (submitted && InsertEntryData(m_DateBuffer, m_AccountBuffer, m_AmountBuffer, m_AccountBuffer != retainedEarnigns.GetAccountNumber())) {
+  if (submitted && InsertEntryData(m_DateBuffer, m_AccountBuffer, m_AmountBuffer, m_AccountBuffer != retainedEarnignsID)) {
     memset(&m_DateBuffer, 0, sizeof(Date));
     memset(&m_AccountBuffer, 0, sizeof(int));
     memset(&m_AmountBuffer, 0, sizeof(float));
-    Ledger::SetDirty();
+    FerretLayer::Get().SetContextDirty(true);
   }
 
   ImGui::EndTable();

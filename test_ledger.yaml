@@ -7,12 +7,12 @@ Accounts:
       - Month: 12
         Day: 26
         Year: 2026
-        AccountID: -100
-        Amount: 500
+        AccountID: 201
+        Amount: 250
       - Month: 12
         Day: 26
         Year: 2026
-        AccountID: 201
+        AccountID: -100
         Amount: 500
     CreditEntries:
       - Month: 12
@@ -31,7 +31,7 @@ Accounts:
         Day: 26
         Year: 2026
         AccountID: 101
-        Amount: 500
+        Amount: 250
   - AccountNumber: 202
     AccountName: Test Income 2
     IsCreditAccount: true

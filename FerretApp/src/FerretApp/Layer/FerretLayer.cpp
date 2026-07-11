@@ -2,13 +2,13 @@
 #include "Ferret.h"
 #include "imgui.h"
 
-#include "FerretApp/Utils/Utils.h"
-
 #include "FerretApp/Ledger/Ledger.h"
 #include "FerretApp/Statements/Statements.h"
 
 #include "FerretApp/Core/Serializer.h"
 #include "FerretApp/FileDialog/FileDialog.h"
+
+#include "FerretApp/Popup/Popup.h"
 
 ImVec2 g_EntrySize {0,0};
 ImVec2 g_GenericTableSize {0,0};
@@ -21,7 +21,7 @@ void FerretLayer::OnAttach() {
   if (!m_SavePath.empty()) {
     std::map<int, AccountTable> tables;
     TableSerializer::Deserialize(&tables, m_SavePath);
-    Ledger::SetTables(tables);
+    m_Ledger.SetTables(tables);
   }
 }
 
@@ -49,14 +49,6 @@ void FerretLayer::OnUIRender() {
 
   switch (m_State) {
     case RenderState::Ledger: {
-      //  _              _                 
-      // | |            | |                
-      // | |     ___  __| | __ _  ___ _ __ 
-      // | |    / _ \/ _` |/ _` |/ _ \ '__|
-      // | |___|  __/ (_| | (_| |  __/ |   
-      // |______\___|\__,_|\__, |\___|_|   
-      //                    __/ |          
-      //                   |___/           
       header = 
         " _              _                 \n"
         "| |            | |                \n"
@@ -125,15 +117,17 @@ void FerretLayer::OnUIRender() {
 
   switch(m_State) {
     case RenderState::Ledger: {
-      Ledger::OnRenderData();
+      m_Ledger.OnRenderData();
       break;
     }
     case RenderState::Statements: {
-      Statements::OnRenderData();
+      m_Statements.OnRenderData();
       break;
     }
     default: break;
   }
+
+  Popup::Render();
 
   ImGui::End();
 }
@@ -181,12 +175,12 @@ bool FerretLayer::OnKeyPressedEvent(KeyPressedEvent &e) {
 }
 
 bool FerretLayer::OnWindowClose(WindowCloseEvent &e) {
-  if (!Ledger::IsDirty()) {
+  if (!m_ContextDirty) {
     Application::Get().OnApplicationExit();
     return true; // Not sure if it needs to complete this function or not before closing
   }
 
-  Ledger::SetRenderPopup(RenderPopup::SaveAndExit);
+  Popup::SetRenderPopup(PopupType::SaveAndExit);
 
   return true;
 }
@@ -195,7 +189,7 @@ bool FerretLayer::OnWindowClose(WindowCloseEvent &e) {
 void FerretLayer::Open(const std::filesystem::path &filePath) {
   std::map<int, AccountTable> tables;
   TableSerializer::Deserialize(&tables, filePath);
-  Ledger::SetTables(tables);
+  m_Ledger.SetTables(tables);
 
   m_SavePath = filePath;
 }
@@ -210,8 +204,8 @@ void FerretLayer::Open() {
     return;
   }
 
-  if (Ledger::IsDirty()) { // Prompt the user to save before swapping tables
-    Ledger::SetRenderPopup(RenderPopup::SaveAndOpenExistingTables);
+  if (m_ContextDirty) { // Prompt the user to save before swapping tables
+    Popup::SetRenderPopup(PopupType::SaveAndOpenExistingTables);
     m_TempLoadPath = tmp;
     return;
   }
@@ -220,8 +214,8 @@ void FerretLayer::Open() {
 }
 
 void FerretLayer::Save() {
-  TableSerializer::Serialize(Ledger::GetTables(), m_SavePath);
-  Ledger::SetDirty(false);
+  TableSerializer::Serialize(m_Ledger.GetTables(), m_SavePath);
+  m_ContextDirty = false;
 }
 
 void FerretLayer::SaveAs() {

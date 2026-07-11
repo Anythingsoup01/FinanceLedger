@@ -5,6 +5,9 @@
 #include "Ferret/Core/Event/ApplicationEvent.h"
 #include "Ferret/Layer/Layer.h"
 
+#include "FerretApp/Ledger/Ledger.h"
+#include "FerretApp/Statements/Statements.h"
+
 #include <yaml-cpp/yaml.h>
 
 namespace Ferret {
@@ -20,6 +23,15 @@ public:
 
   inline static FerretLayer &Get() { return *s_Instance; }
 
+  void SetContextDirty(const bool &dirty) { m_ContextDirty = dirty; }
+
+  const Ledger &GetLedger() const { return m_Ledger; }
+  Ledger &GetLedger() { return m_Ledger; }
+
+  const Statements &GetStatements() const { return m_Statements; }
+  Statements &GetStatements() { return m_Statements; }
+
+private:
   // Opens a save file from a given path
   void Open(const std::filesystem::path &path);
 
@@ -35,7 +47,7 @@ public:
   // Saves all data to a new path
   void SaveAs();
 
-  bool IsSavePathValid() { return m_SavePath.empty(); }
+  bool IsSavePathValid() { return !m_SavePath.empty(); }
 private:
   // OnWindowClose override for Ferret
   bool OnWindowClose(WindowCloseEvent &e);
@@ -53,7 +65,14 @@ private:
   std::filesystem::path m_SavePath; // The path we save to
   std::filesystem::path m_TempLoadPath; // The path we want to swap to in the event a popup happens
 
+  // TODO: If we ever move toward multi ledger updating, with complete journal entries and statements, we need a class / struct to contain them together
+  Ledger m_Ledger;
+  Statements m_Statements;
+  bool m_ContextDirty = false;
+
   inline static FerretLayer *s_Instance = nullptr;
+private:
+  friend class Popup;
 };
 
 } // namespace Ferret
