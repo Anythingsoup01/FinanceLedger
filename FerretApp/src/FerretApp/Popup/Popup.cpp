@@ -351,10 +351,19 @@ void Popup::RenderEntryDetailsPopup() {
         if (accountID == retainedEarningsTableID) {
           snprintf(accBuf, sizeof(accBuf), "Retained");
         } else {
-          snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? FerretLayer::Get().GetLedger().GetTables().at(accountID).GetAccountNumber() : 0);
+          snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? accountID : 0);
         }
         if (ImGui::BeginCombo("##EditAccountID", accBuf)) {
           renderingCombo = true;
+          if (accountID != retainedEarningsTableID) {
+            const bool is_selected = (accountID == retainedEarningsTableID);
+            if (ImGui::Selectable("Retained", is_selected)) {
+              accountID = retainedEarningsTableID;
+            }
+
+            if (is_selected)
+              ImGui::SetItemDefaultFocus();
+          }
           for (auto &[id, table] : FerretLayer::Get().GetLedger().GetTables()) {
             if (id == m_ViewingTableID) { // We can't add or remove money into the same account
               continue;
@@ -362,11 +371,8 @@ void Popup::RenderEntryDetailsPopup() {
 
             const bool is_selected = (accountID == id);
             char buf[32] = { 0 }; 
-            if (id == retainedEarningsTableID) {
-              snprintf(accBuf, sizeof(accBuf), "Retained");
-            } else {
-              snprintf(accBuf, sizeof(accBuf), "%i", accountID != 0 ? FerretLayer::Get().GetLedger().GetTables().at(accountID).GetAccountNumber() : 0);
-            }
+            snprintf(buf, sizeof(buf), "%i", id);
+            
             if (ImGui::Selectable(buf, is_selected)) {
               accountID = id;
             }

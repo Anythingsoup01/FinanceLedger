@@ -7,19 +7,30 @@ Accounts:
       - Month: 12
         Day: 26
         Year: 2026
-        AccountID: 201
-        Amount: 250
+        AccountID: 99000
+        Amount: 500
+        JournalEntry: Insert Entry
       - Month: 12
         Day: 26
         Year: 2026
-        AccountID: -100
-        Amount: 500
+        AccountID: 201
+        Amount: 250
+        JournalEntry: Insert Entry
     CreditEntries:
       - Month: 12
         Day: 26
         Year: 2026
         AccountID: 301
         Amount: 250
+        JournalEntry: Insert Entry
+  - AccountNumber: 102
+    AccountName: Test Bank Account
+    IsCreditAccount: false
+    Tracking: Untracked
+    DebitEntries:
+      []
+    CreditEntries:
+      []
   - AccountNumber: 201
     AccountName: Test Income
     IsCreditAccount: true
@@ -32,6 +43,7 @@ Accounts:
         Year: 2026
         AccountID: 101
         Amount: 250
+        JournalEntry: Insert Entry
   - AccountNumber: 202
     AccountName: Test Income 2
     IsCreditAccount: true
@@ -50,5 +62,6 @@ Accounts:
         Year: 2026
         AccountID: 101
         Amount: 250
+        JournalEntry: Insert Entry
     CreditEntries:
       []

@@ -136,17 +136,22 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     snprintf(accBuf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? tables.at(m_AccountBuffer).GetAccountNumber() : 0);
   }
   if (ImGui::BeginCombo(buf, accBuf)) {
+    if (m_AccountBuffer != retainedEarnignsID) {
+      const bool is_selected = (m_AccountBuffer == retainedEarnignsID);
+      if (ImGui::Selectable("Retained", is_selected)) {
+        m_AccountBuffer = retainedEarnignsID;
+      }
+
+      if (is_selected)
+        ImGui::SetItemDefaultFocus();
+    }
     for (auto &[id, table] : tables) {
       if (id == m_AccountID) { // We can't add or remove money into the same account
         continue;
       }
       const bool is_selected = (m_AccountBuffer == id);
       char buf[32] = { 0 };
-      if (id == retainedEarnignsID) {
-        snprintf(buf, sizeof(accBuf), "Retained");
-      } else {
-        snprintf(buf, sizeof(accBuf), "%i", m_AccountBuffer != 0 ? tables.at(m_AccountBuffer).GetAccountNumber() : 0);
-      }
+      snprintf(buf, sizeof(accBuf), "%i", id);
       if (ImGui::Selectable(buf, is_selected)) {
         m_AccountBuffer = id;
       }
