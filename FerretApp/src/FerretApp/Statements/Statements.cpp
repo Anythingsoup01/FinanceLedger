@@ -169,8 +169,105 @@ void Statements::OnRenderIncome() {
 }
 
 void Statements::OnRenderRetainedEarnings() {
+  ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0,0));
+  if (ImGui::BeginTable("##RetainedEarnings", 1, flags | ImGuiTableFlags_RowBg)) {
+    ImGui::TableSetupColumn("Retained Earnings");
 
+    Utils::HeaderCentered(1);
 
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    float availableWidth = ImGui::GetContentRegionAvail().x;
+    if (ImGui::BeginTable("##IncomeSection", 3, flags)) {
+      ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
+      ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5);
+      ImGui::TableSetupColumn("Amount", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
+
+      Utils::HeaderCentered(3);
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+
+      ImGui::Text("Beginning Balance");
+
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+
+      ImGui::EndTable();
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    if (ImGui::BeginTable("##IncomesTotal", 2, flags)) {
+      char buf[32] = {0};
+      ImGui::TableSetupColumn("Total", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
+
+      snprintf(buf, sizeof(buf), "%.2f", m_IncomeAccountsTotal);
+      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
+
+      Utils::HeaderCentered(2);
+      ImGui::EndTable();
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    if (ImGui::BeginTable("##ExpensesSection", 3, flags)) {
+      ImGui::TableSetupColumn("Expenses", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
+      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5);
+      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
+
+      for (auto &table : m_ExpenseAccounts) {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%s (%d)", table.Name.c_str(), table.Account);
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%.2f", table.Amount);
+      }
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+
+      ImGui::EndTable();
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    if (ImGui::BeginTable("##ExpensesTotal", 2, flags)) {
+      char buf[32] = {0};
+      ImGui::TableSetupColumn("Total", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
+
+      snprintf(buf, sizeof(buf), "%.2f", m_ExpenseAccountsTotal);
+      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
+
+      Utils::HeaderCentered(2);
+      ImGui::EndTable();
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    if (ImGui::BeginTable("##RetainedEarningsSection", 2, flags)) {
+      char buf[32] = {0};
+      snprintf(buf, sizeof(buf), "Net %s", m_RetainedEarnings < 0 ? "Loss" : "Income");
+      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
+
+      snprintf(buf, sizeof(buf), "%.2f", m_RetainedEarnings);
+      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
+
+      Utils::HeaderCentered(2);
+      ImGui::EndTable();
+    }
+
+    ImGui::EndTable();
+  }
+
+  ImGui::PopStyleVar();
 }
 
 }
