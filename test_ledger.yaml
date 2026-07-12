@@ -4,33 +4,55 @@ Accounts:
     IsCreditAccount: false
     Tracking: Untracked
     DebitEntries:
-      - Month: 12
-        Day: 26
+      - Month: 7
+        Day: 1
         Year: 2026
         AccountID: 99000
         Amount: 500
-        JournalEntry: Insert Entry
-      - Month: 12
-        Day: 26
-        Year: 2026
-        AccountID: 201
-        Amount: 250
-        JournalEntry: Insert Entry
+        JournalEntry: Retained From Last Month
     CreditEntries:
-      - Month: 12
-        Day: 26
+      - Month: 7
+        Day: 15
+        Year: 2026
+        AccountID: 302
+        Amount: 100
+        JournalEntry: Gas Bill
+      - Month: 7
+        Day: 15
         Year: 2026
         AccountID: 301
-        Amount: 250
-        JournalEntry: Insert Entry
+        Amount: 50
+        JournalEntry: Water Bill
   - AccountNumber: 102
-    AccountName: Test Bank Account
+    AccountName: Test Bank Acc
     IsCreditAccount: false
     Tracking: Untracked
     DebitEntries:
-      []
+      - Month: 7
+        Day: 10
+        Year: 2026
+        AccountID: 201
+        Amount: 300
+        JournalEntry: Work Income
+      - Month: 7
+        Day: 24
+        Year: 2026
+        AccountID: 201
+        Amount: 300
+        JournalEntry: Work Income
     CreditEntries:
-      []
+      - Month: 7
+        Day: 14
+        Year: 2026
+        AccountID: 301
+        Amount: 50
+        JournalEntry: Rent Bill
+      - Month: 7
+        Day: 15
+        Year: 2026
+        AccountID: 302
+        Amount: 50
+        JournalEntry: Electric Bill
   - AccountNumber: 201
     AccountName: Test Income
     IsCreditAccount: true
@@ -38,30 +60,53 @@ Accounts:
     DebitEntries:
       []
     CreditEntries:
-      - Month: 12
-        Day: 26
+      - Month: 7
+        Day: 10
         Year: 2026
-        AccountID: 101
-        Amount: 250
-        JournalEntry: Insert Entry
-  - AccountNumber: 202
-    AccountName: Test Income 2
-    IsCreditAccount: true
-    Tracking: Income
-    DebitEntries:
-      []
-    CreditEntries:
-      []
+        AccountID: 102
+        Amount: 300
+        JournalEntry: Work Income
+      - Month: 7
+        Day: 24
+        Year: 2026
+        AccountID: 102
+        Amount: 300
+        JournalEntry: Work Income
   - AccountNumber: 301
     AccountName: Test Expense
     IsCreditAccount: false
     Tracking: Expenses
     DebitEntries:
-      - Month: 12
-        Day: 26
+      - Month: 7
+        Day: 14
+        Year: 2026
+        AccountID: 102
+        Amount: 50
+        JournalEntry: Rent Bill
+      - Month: 7
+        Day: 15
         Year: 2026
         AccountID: 101
-        Amount: 250
-        JournalEntry: Insert Entry
+        Amount: 50
+        JournalEntry: Water Bill
+    CreditEntries:
+      []
+  - AccountNumber: 302
+    AccountName: Test Expense 2
+    IsCreditAccount: false
+    Tracking: Expenses
+    DebitEntries:
+      - Month: 7
+        Day: 15
+        Year: 2026
+        AccountID: 102
+        Amount: 50
+        JournalEntry: Electric Bill
+      - Month: 7
+        Day: 15
+        Year: 2026
+        AccountID: 101
+        Amount: 100
+        JournalEntry: Gas Bill
     CreditEntries:
       []
