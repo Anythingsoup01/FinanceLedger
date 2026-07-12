@@ -11,7 +11,6 @@ namespace Ferret {
 
 void Statements::OnRenderData() {
   OnRenderIncome();
-  ImGui::SameLine();
   OnRenderRetainedEarnings();
 }
 
@@ -188,45 +187,30 @@ void Statements::OnRenderRetainedEarnings() {
       Utils::HeaderCentered(3);
 
       ImGui::TableNextRow();
-      ImGui::TableSetColumnIndex(0);
 
+      ImGui::TableSetColumnIndex(0);
       ImGui::Text("Beginning Balance");
 
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("Balance retained from previous period");
+
+      ImGui::TableSetColumnIndex(2);
+      ImGui::Text("%.2f", m_BeginningBalance);
+
+      ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
       ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
 
-      ImGui::EndTable();
-    }
+      ImGui::TableNextRow();
 
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Text("Income Statement");
 
-    if (ImGui::BeginTable("##IncomesTotal", 2, flags)) {
-      char buf[32] = {0};
-      ImGui::TableSetupColumn("Total", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("Total retained from this period alone");
 
-      snprintf(buf, sizeof(buf), "%.2f", m_IncomeAccountsTotal);
-      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
-
-      Utils::HeaderCentered(2);
-      ImGui::EndTable();
-    }
-
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-
-    if (ImGui::BeginTable("##ExpensesSection", 3, flags)) {
-      ImGui::TableSetupColumn("Expenses", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
-      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5);
-      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
-
-      for (auto &table : m_ExpenseAccounts) {
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%s (%d)", table.Name.c_str(), table.Account);
-        ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%.2f", table.Amount);
-      }
+      ImGui::TableSetColumnIndex(2);
+      ImGui::Text("%.2f", m_RetainedEarnings);
 
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
@@ -238,26 +222,10 @@ void Statements::OnRenderRetainedEarnings() {
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
 
-    if (ImGui::BeginTable("##ExpensesTotal", 2, flags)) {
+    if (ImGui::BeginTable("##TotalRetainedEarnings", 2)) {
+      ImGui::TableSetupColumn("Retained Earnings", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.8);
       char buf[32] = {0};
-      ImGui::TableSetupColumn("Total", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
-
-      snprintf(buf, sizeof(buf), "%.2f", m_ExpenseAccountsTotal);
-      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
-
-      Utils::HeaderCentered(2);
-      ImGui::EndTable();
-    }
-
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-
-    if (ImGui::BeginTable("##RetainedEarningsSection", 2, flags)) {
-      char buf[32] = {0};
-      snprintf(buf, sizeof(buf), "Net %s", m_RetainedEarnings < 0 ? "Loss" : "Income");
-      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
-
-      snprintf(buf, sizeof(buf), "%.2f", m_RetainedEarnings);
+      snprintf(buf, sizeof(buf), "%.2f", m_RetainedEarnings + m_BeginningBalance);
       ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
 
       Utils::HeaderCentered(2);
