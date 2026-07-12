@@ -268,20 +268,29 @@ void Popup::RenderEntryDetailsPopup() {
     if (ImGui::Button("Delete")) {
       m_PopupType = PopupType::NONE;
 
-      AccountTable *otherTable = &FerretLayer::Get().GetLedger().GetTables().at(entryData.GetAccountID());
-      int otherEntryID = Utils::CalculateEntryID(entryData.GetDate(), m_ViewingTableID);
-      otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
-      table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
+      if (entryData.GetAccountID() != FerretLayer::Get().GetLedger().GetRetainedEarningsID()) {
+        AccountTable *otherTable = &FerretLayer::Get().GetLedger().GetTables().at(entryData.GetAccountID());
+        int otherEntryID = Utils::CalculateEntryID(entryData.GetDate(), m_ViewingTableID);
+        otherTable->RemoveEntry(!m_IsViewingCreditEntry, otherEntryID);
+        table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
 
-      if (table.GetTracking() == TableTracking::Expenses || table.GetTracking() == TableTracking::Income
+        if (table.GetTracking() == TableTracking::Expenses || table.GetTracking() == TableTracking::Income
           || otherTable->GetTracking() == TableTracking::Expenses || otherTable->GetTracking() == TableTracking::Income) {
-        FerretLayer::Get().GetStatements().NewDataAvailable();
+          FerretLayer::Get().GetStatements().NewDataAvailable();
+        }
+      } else {
+        if (table.GetTracking() == TableTracking::Expenses || table.GetTracking() == TableTracking::Income) {
+          FerretLayer::Get().GetStatements().UpdateBeginningBalance(entryData.GetAmount());
+        }
+        table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
       }
 
       memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
       memset(&journalEntry, 0, sizeof(journalEntry));
+
+      FerretLayer::Get().SetContextDirty(true);
     }
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("WARNING - Pressing this will delete this entry!");
