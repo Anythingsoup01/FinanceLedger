@@ -12,7 +12,7 @@ public:
   // Inserts a new data entry and optionally updates the referenced table.
   //
   // Returns false when trying to overlap entries, ie. same date and account.
-  bool InsertEntryData(const Date &date, const int &account, const float &amount, bool updateOther);
+  bool InsertEntryData(const Date &date, const int &account, const float &amount, bool updateOther, const std::string &journalEntry);
 
   // This utilizes the id of the selected entry to remove it from the entry list
   void RemoveEntry(int id);

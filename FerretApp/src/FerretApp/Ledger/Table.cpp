@@ -43,11 +43,11 @@ AccountTable::AccountTable(const std::string &accountName, const int &accountNum
     m_CreditTable(accountNumber, true) {
 }
 
-void AccountTable::InsertEntry(const bool &isCredit, const Date &date, const int &accountID, const float &amount, bool updateOther) {
+void AccountTable::InsertEntry(const bool &isCredit, const Date &date, const int &accountID, const float &amount, bool updateOther, const std::string &journalEntry) {
   if (isCredit) {
-    m_CreditTable.InsertEntryData(date, accountID, amount, updateOther);
+    m_CreditTable.InsertEntryData(date, accountID, amount, updateOther, journalEntry);
   } else {
-    m_DebitTable.InsertEntryData(date, accountID, amount, updateOther);
+    m_DebitTable.InsertEntryData(date, accountID, amount, updateOther, journalEntry);
   }
 
   if (m_Tracking == TableTracking::Income || m_Tracking == TableTracking::Expenses) {

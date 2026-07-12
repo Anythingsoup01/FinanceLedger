@@ -62,9 +62,9 @@ void Ledger::OnRenderData() {
   }
 }
 
-void Ledger::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount) {
+void Ledger::SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount, const std::string &journalEntry) {
   auto &table = m_Tables.at(toTable);
-  table.InsertEntry(isCredit, date, fromTable, amount, true);
+  table.InsertEntry(isCredit, date, fromTable, amount, true, journalEntry);
 }
 
 void Ledger::RemoveTable(const int &tableID) {

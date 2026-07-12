@@ -55,7 +55,7 @@ public:
   // This will draw the entire table
   void Draw();
 
-  void InsertEntry(const bool &isCredit, const Date &date, const int &accountID, const float &amount, bool updateOther);
+  void InsertEntry(const bool &isCredit, const Date &date, const int &accountID, const float &amount, bool updateOther, const std::string &journalEntry = "Insert Entry");
 
   // Loops over both credit and debit tables removing entries with a given table id
   void RemoveEntriesFromTable(const int &tableID);

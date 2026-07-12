@@ -11,7 +11,7 @@ extern ImVec2 g_EntrySize;
 
 namespace Ferret {
 
-bool EntryTable::InsertEntryData(const Date &date, const int &account, const float &amount, bool updateOther) {
+bool EntryTable::InsertEntryData(const Date &date, const int &account, const float &amount, bool updateOther, const std::string &journalEntry) {
   // The ID is to allow users to click and edit the entry
   if (date.Day == 0 || date.Month == 0 || date.Year == 0 ||
       account == 0 || amount == 0) {
@@ -26,11 +26,11 @@ bool EntryTable::InsertEntryData(const Date &date, const int &account, const flo
   }
 
   // Insert the new data to the table
-  Entry data = Entry(date, account, amount);
+  Entry data = Entry(date, account, amount, journalEntry);
   m_Entries.emplace(std::pair<int, Entry>(id, data));
 
   if (updateOther)
-    FerretLayer::Get().GetLedger().SubmitEntryDataToTable(account, !m_CreditTable, date, m_AccountID, amount);
+    FerretLayer::Get().GetLedger().SubmitEntryDataToTable(account, !m_CreditTable, date, m_AccountID, amount, journalEntry);
 
   // Increment the total value of the table
   m_TotalValue += amount;
@@ -167,7 +167,7 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     submitted = true;
   }
 
-  if (submitted && InsertEntryData(m_DateBuffer, m_AccountBuffer, m_AmountBuffer, m_AccountBuffer != retainedEarnignsID)) {
+  if (submitted && InsertEntryData(m_DateBuffer, m_AccountBuffer, m_AmountBuffer, m_AccountBuffer != retainedEarnignsID, "Insert Journal Entry")) {
     memset(&m_DateBuffer, 0, sizeof(Date));
     memset(&m_AccountBuffer, 0, sizeof(int));
     memset(&m_AmountBuffer, 0, sizeof(float));

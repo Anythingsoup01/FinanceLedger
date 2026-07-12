@@ -17,6 +17,8 @@ void SerializeEntry(YAML::Emitter &out, const Entry &entry) {
   out << YAML::Key << "AccountID" << YAML::Value << entry.GetAccountID();
   out << YAML::Key << "Amount" << YAML::Value << entry.GetAmount();
 
+  out << YAML::Key << "JournalEntry" << YAML::Value << entry.GetJournalEntry();
+
   out << YAML::EndMap; // Entry
 }
 
@@ -99,7 +101,8 @@ bool TableSerializer::Deserialize(std::map<int, AccountTable> *tables, const std
         accountId = FerretLayer::Get().GetLedger().GetRetainedEarningsID();
       }
       float amount = entry["Amount"].as<float>();
-      accountTable.InsertEntry(false, date, accountId, amount, false);
+      std::string journalEntry = entry["JournalEntry"].IsDefined() ? entry["JournalEntry"].as<std::string>() : "Insert Entry";
+      accountTable.InsertEntry(false, date, accountId, amount, false, journalEntry);
       if (accountId == FerretLayer::Get().GetLedger().GetRetainedEarningsID()) {
         FerretLayer::Get().GetStatements().UpdateBeginningBalance(amount);
       }
@@ -112,8 +115,12 @@ bool TableSerializer::Deserialize(std::map<int, AccountTable> *tables, const std
         entry["Year"].as<int>()
       );
       int accountId = entry["AccountID"].as<int>();
+      if (accountId == -100) { // Old ID
+        accountId = FerretLayer::Get().GetLedger().GetRetainedEarningsID();
+      }
       float amount = entry["Amount"].as<float>();
-      accountTable.InsertEntry(true, date, accountId, amount, false);
+      std::string journalEntry = entry["JournalEntry"].IsDefined() ? entry["JournalEntry"].as<std::string>() : "Insert Entry";
+      accountTable.InsertEntry(true, date, accountId, amount, false, journalEntry);
     }
     (*tables).emplace(std::pair<int, AccountTable>(accountNum, accountTable));
     if (prevId != -1) {

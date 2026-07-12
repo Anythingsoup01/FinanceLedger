@@ -252,14 +252,16 @@ void Popup::RenderEntryDetailsPopup() {
 
   static bool editingEntry = false;
 
-  static Date date = entryData.GetDate();
-  static int accountID = entryData.GetAccountID();
-  static float amount = entryData.GetAmount();
+  static Date date;
+  static int accountID = 0;
+  static float amount = 0;
+  static char journalEntry[256] = {0};
 
   if (accountID == 0) { // Memset will make these 0, since they are static we need to reset it
     date = entryData.GetDate();
     accountID = entryData.GetAccountID();
     amount = entryData.GetAmount();
+    snprintf(journalEntry, sizeof(journalEntry), "%s", entryData.GetJournalEntry().c_str());
   }
 
   if (!editingEntry) {
@@ -279,6 +281,7 @@ void Popup::RenderEntryDetailsPopup() {
       memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
+      memset(&journalEntry, 0, sizeof(journalEntry));
     }
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("WARNING - Pressing this will delete this entry!");
@@ -396,7 +399,11 @@ void Popup::RenderEntryDetailsPopup() {
   ImGui::Text("Last Updated: %02d/%02d/%04d - %02d:%02d", month, day, year, hour, minute);
 
   ImGui::Text("Journal Entry");
-  ImGui::Text("    %s", "JOURNAL ENTRY DATA");
+  if (!editingEntry) {
+    ImGui::Text("    %s", journalEntry);
+  } else {
+    ImGui::InputText("##JournalEntryEdit", journalEntry, sizeof(journalEntry));
+  }
 
   if (!editingEntry) {
     if (ImGui::Button("Edit")) {
@@ -408,6 +415,7 @@ void Popup::RenderEntryDetailsPopup() {
       memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
+      memset(&journalEntry, 0, sizeof(journalEntry));
     }
 
   } else {
@@ -419,11 +427,12 @@ void Popup::RenderEntryDetailsPopup() {
       }
 
       table.RemoveEntry(m_IsViewingCreditEntry, m_ViewingEntryID);
-      table.InsertEntry(m_IsViewingCreditEntry, date, accountID, amount, accountID != FerretLayer::Get().GetLedger().GetRetainedEarningsID());
+      table.InsertEntry(m_IsViewingCreditEntry, date, accountID, amount, accountID != FerretLayer::Get().GetLedger().GetRetainedEarningsID(), journalEntry);
 
       memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
+      memset(&journalEntry, 0, sizeof(journalEntry));
 
       editingEntry = false;
       m_PopupType = PopupType::NONE;
@@ -435,6 +444,7 @@ void Popup::RenderEntryDetailsPopup() {
       memset(&date, 0, sizeof(Date));
       memset(&accountID, 0, sizeof(int));
       memset(&amount, 0, sizeof(float));
+      memset(&journalEntry, 0, sizeof(journalEntry));
     }
 
   }

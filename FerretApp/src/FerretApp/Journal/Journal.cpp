@@ -4,6 +4,8 @@
 
 #include "FerretApp/Utils/Utils.h"
 
+#include "FerretApp/Popup/Popup.h"
+
 extern ImVec2 g_EntrySize;
 
 namespace Ferret {
@@ -54,8 +56,8 @@ void Journal::OnRenderJournalDateTable(const JournalDateTable &table) {
     float availableSpace = ImGui::GetContentRegionAvail().x;
     std::string subTableName = table.DateString + "Entries";
     if (ImGui::BeginTable(subTableName.c_str(), 4, flags)) {
-      ImGui::TableSetupColumn("Account", ImGuiTableColumnFlags_WidthFixed, availableSpace * 0.1f); // The account name will only be a tenth of the window space
-      ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed, availableSpace * 0.7f); // The decription will only be half of the window space
+      ImGui::TableSetupColumn("Account", ImGuiTableColumnFlags_WidthFixed, availableSpace * 0.25f); // The account name will only be a tenth of the window space
+      ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed, availableSpace * 0.55f); // The decription will only be half of the window space
       ImGui::TableSetupColumn("Debit", ImGuiTableColumnFlags_WidthFixed, availableSpace * 0.1f); // The decription will only be 20% of the window space
       ImGui::TableSetupColumn("Credit", ImGuiTableColumnFlags_WidthFixed, availableSpace * 0.1f); // The decription will only be 20% of the window space
       Utils::HeaderCentered(4);
@@ -75,7 +77,61 @@ void Journal::OnRenderJournalDateTable(const JournalDateTable &table) {
 }
 
 void Journal::OnRenderJournalEntry(const JournalEntry &entry) {
-  
+  float total = 0.0f;
+  for (auto &id : entry.DebitEntryIDs) {
+    // Long and convoluted line to get the entry in the credit table with the stored id
+    const Entry &debitEntry = FerretLayer::Get().GetLedger().GetTables().at(entry.CreditAccountID).GetCreditTable()->GetEntries().at(id);
+    const std::string &otherTableName = debitEntry.GetAccountID() != FerretLayer::Get().GetLedger().GetRetainedEarningsID() ?
+                                        FerretLayer::Get().GetLedger().GetTables().at(debitEntry.GetAccountID()).GetName() : "Retained";
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s (%i)", otherTableName.c_str(), debitEntry.GetAccountID());
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Double Click to Edit Entry");
+
+      if (ImGui::IsMouseDoubleClicked(0)) {
+        Popup::ViewEntry(entry.CreditAccountID, id, true);
+      }
+    }
+
+    ImGui::TableSetColumnIndex(1);
+    ImGui::TextUnformatted(debitEntry.GetJournalEntry().c_str());
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Double Click to Edit Entry");
+
+      if (ImGui::IsMouseDoubleClicked(0)) {
+        Popup::ViewEntry(entry.CreditAccountID, id, true);
+      }
+    }
+
+    float entryAmount = debitEntry.GetAmount();
+    ImGui::TableSetColumnIndex(2);
+    ImGui::Text("%.2f", entryAmount);
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Double Click to Edit Entry");
+
+      if (ImGui::IsMouseDoubleClicked(0)) {
+        Popup::ViewEntry(entry.CreditAccountID, id, true);
+      }
+    }
+
+    total+=entryAmount;
+
+    ImGui::TableNextRow();
+  }
+
+  const std::string &tableName = FerretLayer::Get().GetLedger().GetTables().at(entry.CreditAccountID).GetName();
+  ImGui::TableSetColumnIndex(0);
+  ImGui::Text("    %s (%i)", tableName.c_str(), entry.CreditAccountID);
+
+  ImGui::TableSetColumnIndex(3);
+  ImGui::Text("%.2f", total);
+
+  ImGui::TableNextRow();
+
+  ImGui::TableSetColumnIndex(0);
+  ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+
+  ImGui::TableNextRow();
 }
 
 }

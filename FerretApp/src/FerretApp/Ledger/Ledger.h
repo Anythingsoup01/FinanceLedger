@@ -26,7 +26,7 @@ public:
   void SetTables(const std::map<int, AccountTable> &tables) { m_Tables = tables; ReloadTables(); }
 
   // Used to autofill tables referenced when inserting an entry manually
-  void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount);
+  void SubmitEntryDataToTable(const int &toTable, const bool &isCredit, const Date &date, const int &fromTable, const float &amount, const std::string &journalEntry);
 
   // Sends the table removal to the main thread; Clears all entries pertaining to the
   // provided table id

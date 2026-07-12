@@ -18,14 +18,16 @@ struct Date {
 class Entry {
 public:
   Entry() = default;
-  Entry(const Date &date, const int &account, const float &amount)
-    : m_Date(date), m_Account(account), m_Amount(amount) {}
+  Entry(const Date &date, const int &account, const float &amount, const std::string &journalEntry)
+    : m_Date(date), m_Account(account), m_Amount(amount), m_JournalEntry(journalEntry) {}
 
   const Date &GetDate() const { return m_Date; }
 
   const int &GetAccountID() const { return m_Account; }
 
   const float &GetAmount() const { return m_Amount; }
+
+  const std::string &GetJournalEntry() const { return m_JournalEntry; }
 
   // Generates the entry id so we can easily access it later
   int32_t GetEntryID() { return m_Date.GetDateID() + m_Account; }
@@ -37,6 +39,7 @@ private:
   Date m_Date;
   int m_Account;
   float m_Amount;
+  std::string m_JournalEntry;
 };
 
 }
