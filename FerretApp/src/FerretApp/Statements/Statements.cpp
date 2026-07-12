@@ -12,46 +12,26 @@ namespace Ferret {
 void Statements::OnRenderData() {
   OnRenderIncome();
   OnRenderRetainedEarnings();
+  OnRenderBalance();
 }
 
-void Statements::NewDataAvailable() {
+void Statements::NewExpenseOrIncomeDataAvailable() {
   m_IncomeAccounts.clear();
   m_ExpenseAccounts.clear();
 
   m_IncomeAccountsTotal = 0;
   m_ExpenseAccountsTotal = 0;
 
-  int maxAccountDigitCount = 0;
-  int maxAmountDigitCount = 0;
-
   for (auto &[id, table] : FerretLayer::Get().GetLedger().GetTables()) {
     switch (table.GetTracking()) {
       case TableTracking::Income: {
         m_IncomeAccounts.push_back({table.GetName(), table.GetAccountNumber(), table.GetBalance()});
         m_IncomeAccountsTotal += table.GetBalance();
-        int accountDigitCount = Utils::GetDigitCount(table.GetAccountNumber()) + table.GetName().length() + 3;
-        if (maxAccountDigitCount < accountDigitCount) {
-          maxAccountDigitCount = accountDigitCount;
-        }
-
-        int amountDigitCount = Utils::GetDigitCount((int)(table.GetBalance() * 100)) + 3;
-        if (maxAmountDigitCount < amountDigitCount) {
-          maxAmountDigitCount = amountDigitCount;
-        }
         break;
       }
       case TableTracking::Expenses: {
         m_ExpenseAccounts.push_back({table.GetName(), table.GetAccountNumber(), table.GetBalance()});
         m_ExpenseAccountsTotal += table.GetBalance();
-        int accountDigitCount = Utils::GetDigitCount(table.GetAccountNumber()) + table.GetName().length() + 3;
-        if (maxAccountDigitCount < accountDigitCount) {
-          maxAccountDigitCount = accountDigitCount;
-        }
-
-        int amountDigitCount = Utils::GetDigitCount((int)(table.GetBalance() * 100)) + 3;
-        if (maxAmountDigitCount < amountDigitCount) {
-          maxAmountDigitCount = amountDigitCount;
-        }
         break;
       }
       default: break;
@@ -61,12 +41,59 @@ void Statements::NewDataAvailable() {
   m_RetainedEarnings = m_IncomeAccountsTotal - m_ExpenseAccountsTotal;
 }
 
+void Statements::NewCashDataAvailable() {
+  m_CashAccounts.clear();
+  m_OtherAssetsAccounts.clear();
+
+  m_CashAccountsTotal = 0;
+  m_OtherAssetAccountsTotal = 0;
+
+  for (auto &[id, table] : FerretLayer::Get().GetLedger().GetTables()) {
+    switch (table.GetTracking()) {
+      case TableTracking::Cash: {
+        m_CashAccounts.push_back({table.GetName(), table.GetAccountNumber(), table.GetBalance()});
+        m_CashAccountsTotal += table.GetBalance();
+        break;
+      }
+      case TableTracking::OtherAsset: {
+        m_OtherAssetsAccounts.push_back({table.GetName(), table.GetAccountNumber(), table.GetBalance()});
+        m_OtherAssetAccountsTotal += table.GetBalance();
+        break;
+      }
+      default: break;
+    }
+  }
+}
+
+void Statements::NewLiabilityDataAvailable() {
+  m_ShortTermLiabilityAccounts.clear();
+  m_LongTermLiabilityAccounts.clear();
+
+  m_ShortTermLiabilityAccountsTotal = 0;
+  m_LongTermLiabilityAccountsTotal = 0;
+
+  for (auto &[id, table] : FerretLayer::Get().GetLedger().GetTables()) {
+    switch (table.GetTracking()) {
+      case TableTracking::ShortTermLiabilities: {
+        m_ShortTermLiabilityAccounts.push_back({table.GetName(), table.GetAccountNumber(), table.GetBalance()});
+        m_ShortTermLiabilityAccountsTotal += table.GetBalance();
+        break;
+      }
+      case TableTracking::LongTermLiabilities: {
+        m_LongTermLiabilityAccounts.push_back({table.GetName(), table.GetAccountNumber(), table.GetBalance()});
+        m_LongTermLiabilityAccountsTotal += table.GetBalance();
+        break;
+      }
+      default: break;
+    }
+  }
+}
+
 void Statements::OnRenderIncome() {
   ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0,0));
   if (ImGui::BeginTable("##IncomeStatement", 1, flags | ImGuiTableFlags_RowBg)) {
     ImGui::TableSetupColumn("Income Statment");
-
     Utils::HeaderCentered(1);
 
     ImGui::TableNextRow();
@@ -226,7 +253,7 @@ void Statements::OnRenderRetainedEarnings() {
       ImGui::TableSetupColumn("Retained Earnings", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.8);
       char buf[32] = {0};
       snprintf(buf, sizeof(buf), "%.2f", m_RetainedEarnings + m_BeginningBalance);
-      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
+      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.2f);
 
       Utils::HeaderCentered(2);
       ImGui::EndTable();
@@ -235,6 +262,137 @@ void Statements::OnRenderRetainedEarnings() {
     ImGui::EndTable();
   }
 
+  ImGui::PopStyleVar();
+}
+
+void Statements::OnRenderBalance() {
+  ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0,0));
+  if (ImGui::BeginTable("##BalanceStatment", 1, flags | ImGuiTableFlags_RowBg)) {
+    ImGui::TableSetupColumn("Balance Statement");
+    Utils::HeaderCentered(1);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    float availableWidth = ImGui::GetContentRegionAvail().x;
+    if (ImGui::BeginTable("##BalanceStatementSections", 2, flags)) {
+      ImGui::TableSetupColumn("Assets", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5f);
+      ImGui::TableSetupColumn("Liabilites", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5f);
+
+      Utils::HeaderCentered(2);
+      ImGui::TableNextRow();
+
+      ImGui::TableSetColumnIndex(0);
+      if (ImGui::BeginTable("BalanceStatementAssets", 2, flags)) {
+        ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25f);
+        ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25f);
+
+        Utils::HeaderCentered(2);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Cash and Cash Equivalents");
+
+        ImGui::TableNextRow();
+        for (auto &table : m_CashAccounts) {
+          ImGui::TableSetColumnIndex(0);
+          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
+          ImGui::TableSetColumnIndex(1);
+          ImGui::Text("%.2f", table.Amount);
+          ImGui::TableNextRow();
+        }
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+
+        ImGui::TextUnformatted("Other Assets");
+
+        ImGui::TableNextRow();
+        for (auto &table : m_OtherAssetsAccounts) {
+          ImGui::TableSetColumnIndex(0);
+          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
+          ImGui::TableSetColumnIndex(1);
+          ImGui::Text("%.2f", table.Amount);
+          ImGui::TableNextRow();
+        }
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Total");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%.2f", m_OtherAssetAccountsTotal + m_CashAccountsTotal);
+
+        ImGui::EndTable();
+      }
+
+      ImGui::TableSetColumnIndex(1);
+
+      if (ImGui::BeginTable("BalanceStatementLiabilites", 2, flags)) {
+        ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25f);
+        ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25f);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Short Term Liabilites");
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+
+        for (auto &table : m_ShortTermLiabilityAccounts) {
+          ImGui::TableSetColumnIndex(0);
+          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
+          ImGui::TableSetColumnIndex(1);
+          ImGui::Text("%.2f", table.Amount);
+          ImGui::TableNextRow();
+        }
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+
+        ImGui::TextUnformatted("Long Term Liabilites");
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+
+        for (auto &table : m_LongTermLiabilityAccounts) {
+          ImGui::TableSetColumnIndex(0);
+          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
+          ImGui::TableSetColumnIndex(1);
+          ImGui::Text("%.2f", table.Amount);
+          ImGui::TableNextRow();
+        }
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Total");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%.2f", m_LongTermLiabilityAccountsTotal + m_ShortTermLiabilityAccountsTotal);
+
+        ImGui::EndTable();
+      }
+      ImGui::EndTable();
+    }
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    if (ImGui::BeginTable("##BalanceStatementTotal", 2, flags)) {
+      char buf[32] = {0};
+      float total = (m_CashAccountsTotal + m_OtherAssetAccountsTotal) - (m_ShortTermLiabilityAccountsTotal + m_LongTermLiabilityAccountsTotal);
+      ImGui::TableSetupColumn("Net Worth", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.8);
+      snprintf(buf, sizeof(buf), "%.2f", total);
+      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.2f);
+
+      Utils::HeaderCentered(2);
+
+      ImGui::EndTable();
+    }
+    ImGui::EndTable();
+  }
   ImGui::PopStyleVar();
 }
 

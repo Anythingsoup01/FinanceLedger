@@ -2,7 +2,7 @@ Accounts:
   - AccountNumber: 101
     AccountName: Test Cash
     IsCreditAccount: false
-    Tracking: Untracked
+    Tracking: Cash
     DebitEntries:
       - Month: 7
         Day: 1
@@ -26,7 +26,7 @@ Accounts:
   - AccountNumber: 102
     AccountName: Test Bank Acc
     IsCreditAccount: false
-    Tracking: Untracked
+    Tracking: Cash
     DebitEntries:
       - Month: 7
         Day: 10
@@ -110,3 +110,16 @@ Accounts:
         JournalEntry: Gas Bill
     CreditEntries:
       []
+  - AccountNumber: 401
+    AccountName: Credit Card
+    IsCreditAccount: true
+    Tracking: ShortTermLiabilities
+    DebitEntries:
+      []
+    CreditEntries:
+      - Month: 7
+        Day: 1
+        Year: 2026
+        AccountID: 99000
+        Amount: 500
+        JournalEntry: Insert Journal Entry

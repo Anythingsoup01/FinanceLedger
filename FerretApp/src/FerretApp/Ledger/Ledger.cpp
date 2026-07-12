@@ -84,7 +84,7 @@ void Ledger::CreateTable(const int &tableID, const std::string &name, const bool
   AccountTable table(name, tableID, isCredit, tracking);
   m_Tables.emplace(std::pair<int, AccountTable>(tableID, table));
   if (tracking == TableTracking::Income || tracking == TableTracking::Expenses) {
-    Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewDataAvailable();});
+    Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewExpenseOrIncomeDataAvailable();});
   }
   ReloadTables();
 }

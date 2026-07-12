@@ -96,31 +96,9 @@ void Popup::RenderCreateTablePopup() {
     for (int i = 0; i < (int)TableTracking::MAX_ITEM; i++) {
       TableTracking track = (TableTracking)i;
       const bool is_selected = (tracking == track);
-      char buf[32] = { 0 }; 
-      switch (track) {
-        case TableTracking::Untracked: {
-          if (ImGui::Selectable("Untracked", is_selected)) {
-            tracking = track;
-          }
-          break;
-        }
-        case TableTracking::Income: {
-          if (ImGui::Selectable("Income", is_selected)) {
-            tracking = track;
-          }
-          break;
-        }
-        case TableTracking::Expenses: {
-          if (ImGui::Selectable("Expenses", is_selected)) {
-            tracking = track;
-          }
-          break;
-        }
-        default: {
-          continue;
-        }
+      if (ImGui::Selectable(TableTrackingToString(track).c_str(), is_selected)) {
+        tracking = track;
       }
-
       // Set the initial focus when opening the combo (keyboard navigation)
       if (is_selected) {
         ImGui::SetItemDefaultFocus();
@@ -144,6 +122,26 @@ void Popup::RenderCreateTablePopup() {
 
   if (ImGui::Button("Confirm")) {
     FerretLayer::Get().GetLedger().CreateTable(accountNumber, accountName, isCredit, tracking);
+
+    switch (tracking) {
+      case TableTracking::Cash:
+      case TableTracking::OtherAsset: {
+        Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewCashDataAvailable();});
+        break;
+      }
+      case TableTracking::ShortTermLiabilities:
+      case TableTracking::LongTermLiabilities: {
+        Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewLiabilityDataAvailable();});
+        break;
+      }
+      case TableTracking::Income:
+      case TableTracking::Expenses: {
+        Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewExpenseOrIncomeDataAvailable();});
+        break;
+      }
+      default: break;
+    }
+
     memset(accountName, 0, sizeof(accountName));
     memset(&accountNumber, 0, sizeof(int));
     memset(&isCredit, 0, sizeof(bool));
@@ -276,7 +274,7 @@ void Popup::RenderEntryDetailsPopup() {
 
         if (table.GetTracking() == TableTracking::Expenses || table.GetTracking() == TableTracking::Income
           || otherTable->GetTracking() == TableTracking::Expenses || otherTable->GetTracking() == TableTracking::Income) {
-          FerretLayer::Get().GetStatements().NewDataAvailable();
+          FerretLayer::Get().GetStatements().NewExpenseOrIncomeDataAvailable();
         }
       } else {
         if (table.GetTracking() == TableTracking::Expenses || table.GetTracking() == TableTracking::Income) {
@@ -551,31 +549,9 @@ void Popup::RenderTableDetailsPopup() {
       for (int i = 0; i < (int)TableTracking::MAX_ITEM; i++) {
         TableTracking track = (TableTracking)i;
         const bool is_selected = (tracking == track);
-        char buf[32] = { 0 }; 
-        switch (track) {
-          case TableTracking::Untracked: {
-            if (ImGui::Selectable("Untracked", is_selected)) {
-              tracking = track;
-            }
-            break;
-          }
-          case TableTracking::Income: {
-            if (ImGui::Selectable("Income", is_selected)) {
-              tracking = track;
-            }
-            break;
-          }
-          case TableTracking::Expenses: {
-            if (ImGui::Selectable("Expenses", is_selected)) {
-              tracking = track;
-            }
-            break;
-          }
-          default: {
-            continue;
-          }
+        if (ImGui::Selectable(TableTrackingToString(track).c_str(), is_selected)) {
+          tracking = track;
         }
-
         // Set the initial focus when opening the combo (keyboard navigation)
         if (is_selected) {
           ImGui::SetItemDefaultFocus();
@@ -617,7 +593,26 @@ void Popup::RenderTableDetailsPopup() {
       }
 
       if (tracking == TableTracking::Income || tracking == TableTracking::Expenses) {
-        Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewDataAvailable();});
+        Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewExpenseOrIncomeDataAvailable();});
+      }
+
+      switch (tracking) {
+        case TableTracking::Cash:
+        case TableTracking::OtherAsset: {
+          Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewCashDataAvailable();});
+          break;
+        }
+        case TableTracking::ShortTermLiabilities:
+        case TableTracking::LongTermLiabilities: {
+          Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewLiabilityDataAvailable();});
+          break;
+        }
+        case TableTracking::Income:
+        case TableTracking::Expenses: {
+          Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewExpenseOrIncomeDataAvailable();});
+          break;
+        }
+        default: break;
       }
 
       m_PopupType = PopupType::NONE;

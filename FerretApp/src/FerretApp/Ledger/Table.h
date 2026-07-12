@@ -6,8 +6,14 @@
 
 namespace Ferret {
 
+// TODO: Allow Users to define custom tracking and set what tracking is for what table,
+// FUTURE THOUGHT: Allow the user to create custom tables and allot them as they want, I.e. creating a custom Income Statement table and formatting it
 enum class TableTracking {
   Untracked = 0,
+  Cash,
+  OtherAsset,
+  ShortTermLiabilities,
+  LongTermLiabilities,
   Income,
   Expenses,
   MAX_ITEM // Leave at bottom

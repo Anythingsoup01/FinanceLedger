@@ -14,8 +14,14 @@ extern ImVec2 g_EntrySize;
 namespace Ferret {
 
 TableTracking StringToTableTracking(const std::string &trackStr) {
-  if (trackStr == "Untracked") {
-    return TableTracking::Untracked;
+  if (trackStr == "Cash") {
+    return TableTracking::Cash;
+  } else if (trackStr == "OtherAsset") {
+    return TableTracking::OtherAsset;
+  } else if (trackStr == "ShortTermLiabilities") {
+    return TableTracking::ShortTermLiabilities;
+  } else if (trackStr == "LongTermLiabilities") {
+    return TableTracking::LongTermLiabilities;
   } else if (trackStr == "Income") {
     return TableTracking::Income;
   } else if (trackStr == "Expenses") {
@@ -27,9 +33,13 @@ TableTracking StringToTableTracking(const std::string &trackStr) {
 
 std::string TableTrackingToString(const TableTracking &tracking) {
   switch (tracking) {
-    case TableTracking::Untracked: { return "Untracked"; }
-    case TableTracking::Income:    { return "Income"; }
-    case TableTracking::Expenses:  { return "Expenses"; }
+    case TableTracking::Untracked:             { return "Untracked"; }
+    case TableTracking::Cash:                  { return "Cash"; }
+    case TableTracking::OtherAsset:            { return "OtherAsset"; }
+    case TableTracking::ShortTermLiabilities:  { return "ShortTermLiabilities"; }
+    case TableTracking::LongTermLiabilities:   { return "LongTermLiabilities"; }
+    case TableTracking::Income:                { return "Income"; }
+    case TableTracking::Expenses:              { return "Expenses"; }
     default: return "NOT IMPLEMENTED!";
   }
 }
@@ -50,8 +60,23 @@ void AccountTable::InsertEntry(const bool &isCredit, const Date &date, const int
     m_DebitTable.InsertEntryData(date, accountID, amount, updateOther, journalEntry);
   }
 
-  if (m_Tracking == TableTracking::Income || m_Tracking == TableTracking::Expenses) {
-    Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewDataAvailable();});
+  switch (m_Tracking) {
+    case TableTracking::Cash:
+    case TableTracking::OtherAsset: {
+      Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewCashDataAvailable();});
+      break;
+    }
+    case TableTracking::ShortTermLiabilities:
+    case TableTracking::LongTermLiabilities: {
+      Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewLiabilityDataAvailable();});
+      break;
+    }
+    case TableTracking::Income:
+    case TableTracking::Expenses: {
+      Application::Get().SubmitToMainThread([](){FerretLayer::Get().GetStatements().NewExpenseOrIncomeDataAvailable();});
+      break;
+    }
+    default: break;
   }
 
   if (isCredit) {
