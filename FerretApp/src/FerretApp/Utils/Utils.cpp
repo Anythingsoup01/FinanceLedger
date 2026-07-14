@@ -1,5 +1,7 @@
 #include "Utils.h"
 
+#include "Ferret/Core/Input.h"
+
 #include <imgui.h>
 
 namespace Utils {
@@ -31,7 +33,7 @@ bool IsSubitted() {
   if (!ImGui::IsItemHovered())
     return false;
 
-  return ImGui::IsKeyDown(ImGuiKey_Enter) || ImGui::IsKeyDown(ImGuiKey_KeypadEnter);
+  return Ferret::Input::IsKeyPressed(Ferret::KeyCode::Enter) || Ferret::Input::IsKeyPressed(Ferret::KeyCode::KPEnter);
 }
 
 int GetDigitCount(const int &val) {

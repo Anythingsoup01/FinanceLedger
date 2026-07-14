@@ -10,9 +10,11 @@ extern ImVec2 g_EntrySize;
 namespace Ferret {
 
 void Statements::OnRenderData() {
-  OnRenderIncome();
+  OnRenderIncomeStatement();
+  ImGui::Dummy(ImVec2(0, 50));
   OnRenderRetainedEarnings();
-  OnRenderBalance();
+  ImGui::Dummy(ImVec2(0, 50));
+  OnRenderBalanceStatement();
 }
 
 void Statements::NewExpenseOrIncomeDataAvailable() {
@@ -89,7 +91,50 @@ void Statements::NewLiabilityDataAvailable() {
   }
 }
 
-void Statements::OnRenderIncome() {
+void Statements::RenderIncomeStatementTables(const std::string &tableName, const std::vector<AccountTableStatementData> &accounts, const float &tableTotal) {
+  ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+  float availableWidth = ImGui::GetContentRegionAvail().x;
+  char buf[32] = {0};
+  snprintf(buf, sizeof(buf), "##%sSection", tableName.c_str());
+  if (ImGui::BeginTable(buf, 3, flags)) {
+    ImGui::TableSetupColumn(tableName.c_str(), ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
+    ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5);
+    ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
+
+    Utils::HeaderCentered(3);
+    ImGui::TableNextRow();
+
+    for (auto &table : accounts) {
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("%s (%d)", table.Name.c_str(), table.Account);
+      ImGui::TableSetColumnIndex(2);
+      ImGui::Text("%.2f", table.Amount);
+      ImGui::TableNextRow();
+    }
+
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+
+    ImGui::EndTable();
+  }
+
+  ImGui::TableNextRow();
+  ImGui::TableSetColumnIndex(0);
+
+  snprintf(buf, sizeof(buf), "##%sTotal", tableName.c_str());
+  if (ImGui::BeginTable(buf, 2, flags)) {
+    char buf[32] = {0};
+    ImGui::TableSetupColumn("Total", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
+
+    snprintf(buf, sizeof(buf), "%.2f", tableTotal);
+    ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
+
+    Utils::HeaderCentered(2);
+    ImGui::EndTable();
+  }
+}
+
+void Statements::OnRenderIncomeStatement() {
   ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0,0));
   if (ImGui::BeginTable("##IncomeStatement", 1, flags | ImGuiTableFlags_RowBg)) {
@@ -99,83 +144,17 @@ void Statements::OnRenderIncome() {
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
 
+    RenderIncomeStatementTables("Income", m_IncomeAccounts, m_IncomeAccountsTotal);
+    
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    RenderIncomeStatementTables("Expenses", m_ExpenseAccounts, m_ExpenseAccountsTotal);
+    
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
     float availableWidth = ImGui::GetContentRegionAvail().x;
-    if (ImGui::BeginTable("##IncomeSection", 3, flags)) {
-      ImGui::TableSetupColumn("Income", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
-      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5);
-      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
-
-      Utils::HeaderCentered(3);
-      ImGui::TableNextRow();
-
-      for (auto &table : m_IncomeAccounts) {
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%s (%d)", table.Name.c_str(), table.Account);
-        ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%.2f", table.Amount);
-        ImGui::TableNextRow();
-      }
-
-      ImGui::TableSetColumnIndex(0);
-      ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
-
-      ImGui::EndTable();
-    }
-
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-
-    if (ImGui::BeginTable("##IncomesTotal", 2, flags)) {
-      char buf[32] = {0};
-      ImGui::TableSetupColumn("Total", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
-
-      snprintf(buf, sizeof(buf), "%.2f", m_IncomeAccountsTotal);
-      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
-
-      Utils::HeaderCentered(2);
-      ImGui::EndTable();
-    }
-
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-
-    if (ImGui::BeginTable("##ExpensesSection", 3, flags)) {
-      ImGui::TableSetupColumn("Expenses", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
-      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.5);
-      ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.25);
-
-      for (auto &table : m_ExpenseAccounts) {
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%s (%d)", table.Name.c_str(), table.Account);
-        ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%.2f", table.Amount);
-      }
-
-      ImGui::TableNextRow();
-      ImGui::TableSetColumnIndex(0);
-      ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
-
-      ImGui::EndTable();
-    }
-
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-
-    if (ImGui::BeginTable("##ExpensesTotal", 2, flags)) {
-      char buf[32] = {0};
-      ImGui::TableSetupColumn("Total", ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.67f);
-
-      snprintf(buf, sizeof(buf), "%.2f", m_ExpenseAccountsTotal);
-      ImGui::TableSetupColumn(buf, ImGuiTableColumnFlags_WidthFixed, availableWidth * 0.33f);
-
-      Utils::HeaderCentered(2);
-      ImGui::EndTable();
-    }
-
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-
     if (ImGui::BeginTable("##RetainedEarningsSection", 2, flags)) {
       char buf[32] = {0};
       snprintf(buf, sizeof(buf), "Net %s", m_RetainedEarnings < 0 ? "Loss" : "Income");
@@ -265,7 +244,23 @@ void Statements::OnRenderRetainedEarnings() {
   ImGui::PopStyleVar();
 }
 
-void Statements::OnRenderBalance() {
+void Statements::RenderBalanceStatementTables(const std::string &tableName, const std::vector<AccountTableStatementData> &accounts) {
+  ImGui::TextUnformatted(tableName.c_str());
+
+  ImGui::TableNextRow();
+  for (auto &table : accounts) {
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
+    ImGui::TableSetColumnIndex(1);
+    ImGui::Text("%.2f", table.Amount);
+    ImGui::TableNextRow();
+  }
+
+  ImGui::TableSetColumnIndex(0);
+  ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+}
+
+void Statements::OnRenderBalanceStatement() {
   ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0,0));
   if (ImGui::BeginTable("##BalanceStatment", 1, flags | ImGuiTableFlags_RowBg)) {
@@ -292,34 +287,15 @@ void Statements::OnRenderBalance() {
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        ImGui::TextUnformatted("Cash and Cash Equivalents");
 
-        ImGui::TableNextRow();
-        for (auto &table : m_CashAccounts) {
-          ImGui::TableSetColumnIndex(0);
-          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
-          ImGui::TableSetColumnIndex(1);
-          ImGui::Text("%.2f", table.Amount);
-          ImGui::TableNextRow();
-        }
-
-        ImGui::TableSetColumnIndex(0);
-        ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+        RenderBalanceStatementTables("Cash and Cash Equivalents", m_CashAccounts);
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
 
-        ImGui::TextUnformatted("Other Assets");
+        RenderBalanceStatementTables("Other Assets", m_OtherAssetsAccounts);
 
         ImGui::TableNextRow();
-        for (auto &table : m_OtherAssetsAccounts) {
-          ImGui::TableSetColumnIndex(0);
-          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
-          ImGui::TableSetColumnIndex(1);
-          ImGui::Text("%.2f", table.Amount);
-          ImGui::TableNextRow();
-        }
-
         ImGui::TableSetColumnIndex(0);
         ImGui::TextUnformatted("Total");
         ImGui::TableSetColumnIndex(1);
@@ -336,38 +312,15 @@ void Statements::OnRenderBalance() {
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        ImGui::TextUnformatted("Short Term Liabilites");
+
+        RenderBalanceStatementTables("Short Term Liabilities", m_ShortTermLiabilityAccounts);
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
 
-        for (auto &table : m_ShortTermLiabilityAccounts) {
-          ImGui::TableSetColumnIndex(0);
-          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
-          ImGui::TableSetColumnIndex(1);
-          ImGui::Text("%.2f", table.Amount);
-          ImGui::TableNextRow();
-        }
-
-        ImGui::TableSetColumnIndex(0);
-        ImGui::Dummy(ImVec2(ImGui::GetColumnWidth(), g_EntrySize.y));
+        RenderBalanceStatementTables("Long Term Liabilities", m_LongTermLiabilityAccounts);
 
         ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-
-        ImGui::TextUnformatted("Long Term Liabilites");
-
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-
-        for (auto &table : m_LongTermLiabilityAccounts) {
-          ImGui::TableSetColumnIndex(0);
-          ImGui::Text("*  %s (%d)", table.Name.c_str(), table.Account);
-          ImGui::TableSetColumnIndex(1);
-          ImGui::Text("%.2f", table.Amount);
-          ImGui::TableNextRow();
-        }
-
         ImGui::TableSetColumnIndex(0);
         ImGui::TextUnformatted("Total");
         ImGui::TableSetColumnIndex(1);
