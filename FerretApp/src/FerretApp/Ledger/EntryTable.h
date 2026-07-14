@@ -4,6 +4,7 @@
 
 namespace Ferret {
 
+// Used to hold all entries pertaining to the sub-account
 class EntryTable {
 public:
   EntryTable(int32_t accountID, bool isCredit)

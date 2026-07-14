@@ -2,26 +2,60 @@
 
 namespace Ferret {
 
+//
+//  Used as a storage medium between the Ledger and Statements class
+//   which stores the accounts name, id / number, and the balance of
+//   the account and is used to display it as needed per account
+//
 struct AccountTableStatementData {
   std::string Name;
   int Account;
   float Amount;
 };
 
+//
+//  Used to render the Statements that are currently implemented
+//
 class Statements {
 public:
+  // Renders all Statements to the screen
   void OnRenderData();
+
+  // Used to let the class object know there new date in an Income or
+  //  Expense account
   void NewExpenseOrIncomeDataAvailable();
+
+  // Used to let the class object know there new date in an Cash or
+  //  Other Asset account
   void NewCashDataAvailable();
+
+  // Used to let the class object know there new date in a Short
+  //  Term Liability or Long Term Liability account
   void NewLiabilityDataAvailable();
 
   // This simply adds the amount to the beginning balance
   void UpdateBeginningBalance(const float &amount) { m_BeginningBalance += amount; }
 
 private:
-  void OnRenderIncome();
+  // Renders the accounts given for the income statement; Used by
+  //  OnRenderIncomeStatement();
+  void RenderIncomeStatementTables(const std::string &tableName, const std::vector<AccountTableStatementData> &accounts, const float &tableTotal);
+
+  // Renders the Income Statement to the screen, using the Income and
+  //  Expense Accounts and Totals
+  void OnRenderIncomeStatement();
+
+  // Renders the Retained Earnings to the screen, using the Beginning
+  //  Balance and Retained Earnings from the period
   void OnRenderRetainedEarnings();
-  void OnRenderBalance();
+
+  // Renders the accounts given for the balance statement; Used by
+  //  OnRenderBalanceStatement();
+  void RenderBalanceStatementTables(const std::string &tableName, const std::vector<AccountTableStatementData> &accounts);
+
+  // Renders the Balance Statement to the screen, using the Cash, Other Assets,
+  //  Short Term Liability and Long Term Liability Accounts and Totals
+  void OnRenderBalanceStatement();
 private:
   float m_IncomeAccountsTotal = 0;
   float m_ExpenseAccountsTotal = 0;

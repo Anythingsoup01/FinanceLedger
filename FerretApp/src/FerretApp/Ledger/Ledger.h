@@ -11,6 +11,7 @@ enum class RenderPopup {
   EntryDetails, TableDetails
 };
 
+// Used to hold all Account Tables, render, and interact with them
 class Ledger {
 public:
   // Renders all tables

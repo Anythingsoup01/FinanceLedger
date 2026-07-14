@@ -44,23 +44,31 @@ public:
   // This will get the Next variable
   inline AccountTable *GetNext() { return m_Next; }
 
+  // Gets the table name
   const std::string &GetName() const { return m_Name; }
 
+  // Sets the table name
   void SetName(const std::string &name) { m_Name = name; }
 
+  // Gets the Account Number for the table
   const int &GetAccountNumber() const { return m_Number; }
 
+  // Returns whether or not the account is meant for credit
   const bool &IsCreditAccount() const { return m_CreditAccount; }
 
+  // Sets whether or not the account is meant for credit
   void SetCreditAccount(const bool &isCredit) { m_CreditAccount = isCredit; }
 
+  // Gets the account tracking
   const TableTracking &GetTracking() const { return m_Tracking; }
 
+  // Sets the account tracking
   inline void SetTracking(const TableTracking &tracking) { m_Tracking = tracking; }
 
   // This will draw the entire table
   void Draw();
 
+  // Inserts an entry to the respective table and populates all information, optionally updates the other table mentioned in the accountID
   void InsertEntry(const bool &isCredit, const Date &date, const int &accountID, const float &amount, bool updateOther, const std::string &journalEntry = "Insert Entry");
 
   // Loops over both credit and debit tables removing entries with a given table id
