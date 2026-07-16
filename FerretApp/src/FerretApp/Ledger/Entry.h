@@ -17,6 +17,7 @@ struct Date {
 
   // Generates a DateID used by primarily the journal
   int GetDateID() { return Day + Month + Year; }
+  const int GetDateID() const { return Day + Month + Year; }
 };
 
 // Used to keep track of each entry provided to the ledger and journal
