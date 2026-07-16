@@ -4,6 +4,8 @@ Using [Ferret](https://github.com/Anythingsoup01/Ferret), my application framewo
 
 Anyone is free to use this software however they choose, just so long as this file & the license is located __with__ the framework.
 
+The main branch is used for developement which can and will eventually contain non-functional code. Users looking to have a stable experience should checkout a release branch prefixxed with a V#.#.#
+
 # Linux
 
 ### 1. Clone the Repository
