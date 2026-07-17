@@ -9,12 +9,24 @@ extern ImVec2 g_EntrySize;
 
 namespace Ferret {
 
+Statements::Statements() {
+  uint64_t tableHash = Utils::GenerateHash64("Test");
+  m_RootTableHashes.push_back(tableHash);
+  m_TableMap.emplace(std::pair<uint64_t, Table>(tableHash, Table("Test", std::string())));
+}
+
 void Statements::OnRenderData() {
   OnRenderIncomeStatement();
   ImGui::Dummy(ImVec2(0, 50));
   OnRenderRetainedEarnings();
   ImGui::Dummy(ImVec2(0, 50));
   OnRenderBalanceStatement();
+
+  for (auto &tableHash : m_RootTableHashes) {
+    auto &table = m_TableMap.at(tableHash);
+    table.Render();
+  }
+
 }
 
 void Statements::NewExpenseOrIncomeDataAvailable() {

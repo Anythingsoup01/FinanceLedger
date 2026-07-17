@@ -1,5 +1,8 @@
 #pragma once
 
+#include "FerretApp/Table/Table.h"
+#include "FerretApp/Table/DataSet.h"
+
 namespace Ferret {
 
 //
@@ -18,6 +21,7 @@ struct AccountTableStatementData {
 //
 class Statements {
 public:
+  Statements();
   // Renders all Statements to the screen
   void OnRenderData();
 
@@ -35,6 +39,13 @@ public:
 
   // This simply adds the amount to the beginning balance
   void UpdateBeginningBalance(const float &amount) { m_BeginningBalance += amount; }
+
+  const Table &GetTable(const uint64_t &id) const { return m_TableMap.at(id); }
+  Table &GetTable(const uint64_t &id) { return m_TableMap.at(id); }
+
+  const DataSet &GetDataSet(const uint64_t &id) const { return m_DataSetMap.at(id); }
+  DataSet &GetDataSet(const uint64_t &id) { return m_DataSetMap.at(id); }
+
 
 private:
   // Renders the accounts given for the income statement; Used by
@@ -77,6 +88,11 @@ private:
 
   std::vector<AccountTableStatementData> m_ShortTermLiabilityAccounts;
   std::vector<AccountTableStatementData> m_LongTermLiabilityAccounts;
+
+  std::vector<uint64_t> m_RootTableHashes;
+
+  std::unordered_map<TableHash, Table> m_TableMap;
+  std::unordered_map<DataSetHash, DataSet> m_DataSetMap;
 
 };
 

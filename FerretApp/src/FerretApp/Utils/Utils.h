@@ -17,4 +17,6 @@ int GetTopDigit(const int &val);
 // Calculates what an entry id should be based on the given data
 int CalculateEntryID(const Ferret::Date &date, const int &accountID);
 
+uint64_t GenerateHash64(const std::string_view& str);
+
 }

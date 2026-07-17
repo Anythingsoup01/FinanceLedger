@@ -81,5 +81,14 @@ int CalculateEntryID(const Ferret::Date &date, const int &accountID) {
   return (date.Day * DAY_WEIGHT) + date.Month + date.Year + LARGEST_ACCOUNT_NUMBER - accountID;
 }
 
+uint64_t GenerateHash64(const std::string_view& str) {
+  uint64_t hash = 14695981039346656037ull;
+  for (unsigned char c : str) {
+    hash ^= c;
+    hash *= 1099511628211ull;
+  }
+  return hash;
+}
+
 
 }

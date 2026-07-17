@@ -4,6 +4,9 @@ set_property(TARGET FerretApp PROPERTY CXX_STANDARD 20)
 target_sources(FerretApp PRIVATE
 src/FerretApp/Popup/Popup.cpp
 src/FerretApp/Utils/Utils.cpp
+src/FerretApp/Table/DataSet.cpp
+src/FerretApp/Table/Table.cpp
+src/FerretApp/Table/DataEntry.cpp
 src/FerretApp/Layer/FerretLayer.cpp
 src/FerretApp/FileDialog/FileDialog.cpp
 src/FerretApp/Statements/Statements.cpp
@@ -17,6 +20,8 @@ src/FerretApp/Core/Serializer.cpp
 src/FerretApp/Popup/Popup.h
 src/FerretApp/Utils/Utils.h
 src/FerretApp/Table/Table.h
+src/FerretApp/Table/DataEntry.h
+src/FerretApp/Table/DataSet.h
 src/FerretApp/Layer/FerretLayer.h
 src/FerretApp/FileDialog/FileDialog.h
 src/FerretApp/Statements/Statements.h
