@@ -1,6 +1,6 @@
 #include "Statements.h"
 
-#include "FerretApp/Ledger/Table.h"
+#include "FerretApp/DataTypes/AccountTable.h"
 #include "FerretApp/Layer/FerretLayer.h"
 
 #include "FerretApp/Utils/Utils.h"

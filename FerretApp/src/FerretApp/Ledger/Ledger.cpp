@@ -3,8 +3,7 @@
 #include "Ferret/Core/Application.h"
 #include "FerretApp/Layer/FerretLayer.h"
 
-#include "Table.h"
-#include "Entry.h"
+#include "FerretApp/DataTypes/Entry.h"
 
 #include "FerretApp/Utils/Utils.h"
 

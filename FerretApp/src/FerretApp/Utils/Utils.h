@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FerretApp/Ledger/Entry.h"
+#include "FerretApp/DataTypes/Entry.h"
 
 namespace Utils {
 

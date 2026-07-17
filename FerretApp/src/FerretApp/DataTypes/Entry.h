@@ -11,7 +11,7 @@ struct Date {
   Date() = default;
   Date(int month, int day, int year) {
     Month = month > 12 ? 12 : month < 0 ? 0 : month;
-    Day = day > 31 ? 31 : day < 1 ? 1 : day;
+    Day = day > 31 ? 31 : day < 0 ? 0 : day;
     Year = year > 3000 ? 3000 : year < 0 ? 0 : year;
   }
 
