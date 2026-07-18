@@ -33,6 +33,15 @@ void Popup::Render() {
       RenderTableDetailsPopup();
       break;
     }
+    case PopupType::StatementTableDetails: {
+      // This is so we only ever render one popup, rather than three
+      if (m_ViewingStatementDataSetID != 0) {
+        RenderStatementTableDataSetDetailsPopup();
+      } else {
+        RenderStatementTableDetailsStackPopup();
+      }
+      break;
+    }
     default: break;
   }
 }
@@ -50,6 +59,10 @@ void Popup::ViewTable(const int &tableID) {
   m_PopupType = PopupType::TableDetails;
 }
 
+void Popup::ViewStatementTable(const uint64_t &tableHash) {
+  m_ViewingStatementTableStack.push_back(tableHash);
+  m_PopupType = PopupType::StatementTableDetails;
+}
 
 void Popup::RenderCreateTablePopup() {
   ImGuiViewport *viewport = ImGui::GetMainViewport();
@@ -655,6 +668,416 @@ void Popup::RenderTableDetailsPopup() {
   }
 
   ImGui::End();
+}
+
+void Popup::CloseLastTable() {
+  m_ViewingStatementTableStack.pop_back();
+  if (m_ViewingStatementTableStack.empty()) {
+    m_PopupType = PopupType::NONE;
+  }
+}
+
+void Popup::RenderStatementTableDetails(Table *table, char *nameBuf, const size_t &nameBufSize) {
+  ImVec2 availableSize = ImGui::GetContentRegionAvail();
+  ImVec2 tableViewSize = ImVec2(availableSize.x, availableSize.y - (g_EntrySize.y * 2.0));
+
+  if (ImGui::BeginChild("##TableView", tableViewSize)) {
+    ImGuiTableFlags tflags = ImGuiTableFlags_SizingStretchProp;
+    if (ImGui::BeginTable("##Viewing-Statement-Table", 1, tflags)) {
+      ImGui::TableSetupColumn(table->GetName().c_str());
+      Utils::HeaderCentered(1);
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+
+      uint32_t numCols = table->GetCols();
+      uint32_t numPaddingCols = numCols > 1 ? numCols + 1 : 2;
+      uint32_t totalCols = numCols + numPaddingCols;
+
+      float paddingAmount = 20.0f; // TODO: Let the user define this!
+      float totalPadding = paddingAmount * (float)numPaddingCols;
+
+      float itemSize = (tableViewSize.x - totalPadding) / float(numCols);
+
+
+      ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0,0,0,0));
+      tflags = ImGuiTableFlags_SizingStretchProp;
+      if (ImGui::BeginTable("##TableRender", totalCols, tflags)) {
+        bool paddingCell = true;
+        for (int i = 0; i < totalCols; i++) {
+          ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, paddingCell ? paddingAmount : itemSize);
+          paddingCell = !paddingCell;
+        }
+        Utils::HeaderCentered(totalCols);
+
+        int rowCount = std::ceil((float)table->GetElementCount() / (float)numCols);
+
+        rowCount += rowCount; // Padding
+        uint32_t idx = 0;
+        for (int y = 0; y < rowCount; y++) {
+          if (y % 2 == 0) {
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, g_EntrySize.y));
+            ImGui::TableNextRow();
+            continue;
+          }
+          for (int x = 1; x < totalCols; x+=2) {
+            ImGui::TableSetColumnIndex(x % totalCols);
+            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f, 4.0f));
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_Border));
+            const ElementData &element = table->GetElement(idx);
+            switch (element.Type) {
+              case ElementType::Table: {
+                auto &table = FerretLayer::Get().GetStatements().GetTable(element.ElementHash);
+                ImGui::Text("Table - %s", table.GetName().c_str());
+                break;
+              }
+              case ElementType::DataSet: {
+                auto &dataSet = FerretLayer::Get().GetStatements().GetDataSet(element.ElementHash);
+                ImGui::Text("DataSet - %s", dataSet.GetName().c_str());
+                break;
+              }
+              case ElementType::String: {
+                auto &string = FerretLayer::Get().GetStatements().GetString(element.ElementHash);
+                ImGui::Text("String - %s", string.c_str());
+                break;
+              }
+              default: {
+                ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, g_EntrySize.y));
+                break;
+              }
+            }
+            ImGui::PopStyleVar();
+            idx++;
+          }
+          ImGui::TableNextRow();
+        }
+
+        ImGui::EndTable();
+      }
+      ImGui::PopStyleColor();
+
+      ImGui::EndTable();
+    }
+  }
+  ImGui::EndChild();
+}
+
+void Popup::RenderStatementTableEdit(Table *table, char *nameBuf, const size_t &nameBufSize) {
+  ImVec2 availableSize = ImGui::GetContentRegionAvail();
+  ImVec2 tableViewSize = ImVec2(availableSize.x, availableSize.y - (g_EntrySize.y * 2.0));
+
+  if (ImGui::BeginChild("##TableView", tableViewSize)) {
+    ImGuiTableFlags tflags = ImGuiTableFlags_SizingStretchProp;
+    if (ImGui::BeginTable("##Viewing-Statement-Table", 1, tflags)) {
+      ImGui::TableSetupColumn(table->GetName().c_str());
+      Utils::HeaderCentered(1);
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+
+      uint32_t numCols = table->GetCols();
+      uint32_t numPaddingCols = numCols > 1 ? numCols + 1 : 2;
+      uint32_t totalCols = numCols + numPaddingCols;
+
+      float paddingAmount = 20.0f; // TODO: Let the user define this!
+      float totalPadding = paddingAmount * (float)numPaddingCols;
+
+      float itemSize = (tableViewSize.x - totalPadding) / float(numCols);
+
+
+      ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0,0,0,0));
+      tflags = ImGuiTableFlags_SizingStretchProp;
+      if (ImGui::BeginTable("##TableRender", totalCols, tflags)) {
+        bool paddingCell = true;
+        for (int i = 0; i < totalCols; i++) {
+          ImGui::TableSetupColumn("##EmptyHeader", ImGuiTableColumnFlags_WidthFixed, paddingCell ? paddingAmount : itemSize);
+          paddingCell = !paddingCell;
+        }
+        Utils::HeaderCentered(totalCols);
+
+        int rowCount = std::ceil((float)table->GetElementCount() + 1 / (float)numCols); // We add one so the user has an optional row below to add
+
+        rowCount += rowCount; // Padding
+        uint32_t idx = 0;
+        for (int y = 0; y < rowCount; y++) {
+          if (y % 2 == 0) {
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, g_EntrySize.y));
+            ImGui::TableNextRow();
+            continue;
+          }
+          for (int x = 1; x < totalCols; x+=2) {
+            ImGui::TableSetColumnIndex(x % totalCols);
+            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f, 4.0f));
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_Border));
+            const ElementData &element = table->GetElement(idx);
+            switch (element.Type) {
+              case ElementType::Table: {
+                auto &table = FerretLayer::Get().GetStatements().GetTable(element.ElementHash);
+                ImGui::Text("Table - %s", table.GetName().c_str());
+                break;
+              }
+              case ElementType::DataSet: {
+                auto &dataSet = FerretLayer::Get().GetStatements().GetDataSet(element.ElementHash);
+                ImGui::Text("DataSet - %s", dataSet.GetName().c_str());
+                break;
+              }
+              case ElementType::String: {
+                auto &string = FerretLayer::Get().GetStatements().GetString(element.ElementHash);
+                ImGui::Text("String - %s", string.c_str());
+                break;
+              }
+              default: {
+                ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, g_EntrySize.y));
+                break;
+              }
+            }
+            ImGui::PopStyleVar();
+            idx++;
+          }
+          ImGui::TableNextRow();
+        }
+
+        ImGui::EndTable();
+      }
+      ImGui::PopStyleColor();
+
+      ImGui::EndTable();
+    }
+  }
+  ImGui::EndChild();
+}
+
+void Popup::RenderStatementTableDetailsStackPopup() {
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+  // Sets the window size to be a third of the application window size
+  float windowSizeX = viewport->Size.x / 3.0f;
+  float windowSizeY = viewport->Size.y / 3.0f;
+
+  // Puts to window in the center of the application window
+  float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
+  float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
+
+  ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
+  ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
+  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
+  ImGui::Begin("Table Details", nullptr, flags);
+  static bool renderingCombo = false;
+
+  if (!renderingCombo) {
+    ImGui::SetWindowFocus();
+  }
+
+  static bool editingTable = false;
+  static char nameBuf[128] = {0};
+  static Table tableCopy = {};
+
+  uint64_t currID = m_ViewingStatementTableStack.at(m_ViewingStatementTableStack.size() - 1);
+
+  Table &currTable = FerretLayer::Get().GetStatements().GetTable(currID);
+
+  if (strlen(nameBuf) == 0) { // Memset will make these 0, since they are static we need to reset it
+    snprintf(nameBuf, sizeof(nameBuf), "%s", currTable.GetName().c_str());
+    tableCopy = currTable;
+  }
+
+  if (!editingTable) {
+    RenderStatementTableDetails(&currTable, nameBuf, sizeof(nameBuf));
+
+    if (ImGui::BeginChild("##ButtonsView", ImGui::GetContentRegionAvail())) {
+      float buttonWidth = ImGui::GetContentRegionAvail().x * 0.325f;
+      if (ImGui::Button("Edit", ImVec2(buttonWidth, g_EntrySize.y * 1.5f))) {
+        editingTable = true;
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Delete", ImVec2(buttonWidth, g_EntrySize.y * 1.5f))) {
+        memset(nameBuf, 0, sizeof(nameBuf));
+        Application::Get().SubmitToMainThread([](){ CloseLastTable(); });
+      }
+
+      ImGui::SameLine();
+      if (ImGui::Button("Close", ImVec2(buttonWidth, g_EntrySize.y * 1.5f))) {
+        memset(nameBuf, 0, sizeof(nameBuf));
+        Application::Get().SubmitToMainThread([](){ CloseLastTable(); });
+      }
+    }
+    ImGui::EndChild();
+  } else {
+    RenderStatementTableEdit(&tableCopy, nameBuf, sizeof(nameBuf));
+
+    bool nameDirty = strncmp(nameBuf, currTable.GetName().c_str(), currTable.GetName().length());
+    if (ImGui::BeginChild("##ButtonsView", ImGui::GetContentRegionAvail())) {
+      float buttonWidth = ImGui::GetContentRegionAvail().x * 0.325f;
+      if (ImGui::Button("Confirm", ImVec2(buttonWidth, g_EntrySize.y * 1.5f))) {
+        if (!nameDirty) {
+          currTable = tableCopy;
+        } else {
+          const std::string &parentName = FerretLayer::Get().GetStatements().GetTable(tableCopy.GetParentHash()).GetName();
+          FerretLayer::Get().GetStatements().ReplaceTable(tableCopy.GetHash(), tableCopy.GetName(), parentName, tableCopy.GetParentHash());
+        }
+        Application::Get().SubmitToMainThread([](){ CloseLastTable(); });
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Cancel", ImVec2(buttonWidth, g_EntrySize.y * 1.5f))) {
+        snprintf(nameBuf, sizeof(nameBuf), "%s", currTable.GetName().c_str());
+        tableCopy = currTable;
+
+        editingTable = false;
+      }
+    }
+    ImGui::EndChild();
+  }
+  ImGui::End();
+  ImGui::PopStyleVar();
+}
+
+void Popup::RenderStatementTableDataSetDetailsPopup() {
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+  // Sets the window size to be a third of the application window size
+  float windowSizeX = viewport->Size.x / 3.0f;
+  float windowSizeY = viewport->Size.y / 3.0f;
+
+  // Puts to window in the center of the application window
+  float windowPosX = (viewport->Size.x - windowSizeX) / 2.0f;
+  float windowPosY = (viewport->Size.y - windowSizeY) / 2.0f;
+
+  ImGui::SetNextWindowSize(ImVec2(windowSizeX, windowSizeY)); 
+  ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
+  ImGui::Begin("Data Set Details", nullptr, flags);
+
+  static bool renderingCombo = false;
+
+  if (!renderingCombo) {
+    ImGui::SetWindowFocus();
+  }
+
+  auto &dataSet = FerretLayer::Get().GetStatements().GetDataSet(m_ViewingStatementDataSetID);
+
+  static bool editingTable = false;
+
+  static char nameBuf[128] = {0};
+  static bool increments = false;
+  static TableTracking tracking = TableTracking::Untracked;
+
+  bool nameDirty = strncmp(nameBuf, dataSet.GetName().c_str(), sizeof(nameBuf)) != 0;
+
+  if (strlen(nameBuf) == 0) { // Memset will make these 0, since they are static we need to reset it
+    snprintf(nameBuf, sizeof(nameBuf), "%s", dataSet.GetName().c_str());
+    increments = dataSet.GetIncrementsTotal();
+    tracking = dataSet.GetTracking();
+  }
+
+  if (!editingTable) {
+    ImGui::Text("Data Set Header: %s", nameBuf);
+    ImGui::Text("Table Tracking: %s", TableTrackingToString(tracking).c_str());
+    ImGui::Text("Increments Total: %s", dataSet.GetIncrementsTotal() ? "Y" : "N");
+
+
+    if (ImGui::Button("Edit")) {
+      editingTable = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Close")) {
+      memset(&nameBuf, 0, sizeof(strlen(nameBuf)));
+      memset(&tracking, 0, sizeof(TableTracking));
+      memset(&increments, 0, sizeof(bool));
+      m_ViewingStatementDataSetID = 0;
+    }
+  } else {
+    ImGui::Text("Data Set Header:");
+    ImGui::SameLine();
+    ImGui::InputText("##EditTableName", nameBuf, sizeof(nameBuf));
+
+    ImGui::Text("Table Tracking:");
+    ImGui::SameLine();
+    if (ImGui::BeginCombo("##tracking", TableTrackingToString(tracking).c_str())) {
+      renderingCombo = true;
+      for (int i = 0; i < (int)TableTracking::MAX_ITEM; i++) {
+        TableTracking track = (TableTracking)i;
+        const bool is_selected = (tracking == track);
+        if (ImGui::Selectable(TableTrackingToString(track).c_str(), is_selected)) {
+          tracking = track;
+        }
+        // Set the initial focus when opening the combo (keyboard navigation)
+        if (is_selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    } else {
+      renderingCombo = false;
+    }
+
+    ImGui::TextUnformatted("Increments Total: ");
+    ImGui::SameLine();
+    ImGui::Checkbox("##Increments-Total", &increments);
+
+
+    bool disabled = false;
+
+    auto &statements = FerretLayer::Get().GetStatements();
+    uint64_t currID = m_ViewingStatementTableStack.at(m_ViewingStatementTableStack.size() - 1);
+    std::string parentName = statements.GetTable(currID).GetName();
+
+    if (statements.DataSetExists(Utils::GenerateHash64(parentName + nameBuf)) && nameDirty) {
+      disabled = true;
+    }
+
+    ImGui::BeginDisabled(disabled);
+
+    if (ImGui::Button("Confirm")) {
+
+      if (!nameDirty) {
+        dataSet.SetIncrementsTotal(increments);
+        dataSet.SetTracking(tracking);
+        dataSet.NewDataAvailable();
+      } else {
+        statements.ReplaceDataSet(m_ViewingStatementDataSetID, nameBuf, parentName, currID, tracking, increments);
+      }
+
+      m_PopupType = PopupType::NONE;
+      memset(&nameBuf, 0, sizeof(strlen(nameBuf)));
+      memset(&increments, 0, sizeof(bool));
+      memset(&tracking, 0, sizeof(TableTracking));
+      editingTable = false;
+
+      FerretLayer::Get().SetContextDirty(true);
+    }
+
+    ImGui::EndDisabled();
+
+    if (disabled)
+      ImGui::PopStyleColor(3);
+
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+      snprintf(nameBuf, sizeof(nameBuf), "%s", dataSet.GetName().c_str());
+      increments = dataSet.GetIncrementsTotal();
+      tracking = dataSet.GetTracking();
+      editingTable = false;
+    }
+
+    
+    if (ImGui::Button("Delete")) {
+      m_PopupType = PopupType::NONE;
+
+      memset(&increments, 0, sizeof(bool));
+      memset(&tracking, 0, sizeof(TableTracking));
+
+      statements.RemoveDataSet(m_ViewingStatementDataSetID, currID);
+    }
+
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("WARNING - Pressing this will delete this table!");
+    }
+  }
+
+  ImGui::End();
+
 }
 
 }

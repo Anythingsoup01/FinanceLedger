@@ -7,11 +7,9 @@ extern ImVec2 g_EntrySize;
 
 namespace Ferret {
 
-DataSet::DataSet(const std::string &header, const std::string &parentName, const TableTracking &tracking)
-  : m_Header(header) {
-  m_Hash = Utils::GenerateHash64(parentName + header);
-  m_ParentHash = Utils::GenerateHash64(parentName);
-
+DataSet::DataSet(const std::string &header, const std::string &parentLegalName, const uint64_t &parentHash, const TableTracking &tracking, const bool &incrementsTotal)
+  : m_Header(header), m_ParentLegalName(parentLegalName), m_ParentHash(parentHash), m_Tracking(tracking), m_IncrementsTotal(incrementsTotal) {
+  m_Hash = Utils::GenerateHash64(parentLegalName + header);
   m_Entries.clear();
 
   for (auto &[id, table] : FerretLayer::Get().GetLedger().GetTables()) {
@@ -64,6 +62,29 @@ void DataSet::NewDataAvailable() {
 
   auto &parentTable = FerretLayer::Get().GetStatements().GetTable(m_ParentHash);
   parentTable.UpdateTotal();
+}
+
+// INTERNAL USE ONLY
+//
+// Used by statements to change the name and reload the hash
+// for rendering.
+//
+// Users must not utilize this in any capacity as it may cause
+// crashes and/or unexpected behavior.
+void DataSet::SetName(const std::string &name, const std::string &parentLegalName) {
+  m_Header = name;
+  m_ParentLegalName = parentLegalName;
+  m_Hash = Utils::GenerateHash64(parentLegalName + name);
+}
+
+// INTERNAL USE ONLY
+//
+// Used to set the internal parent hash for pushing updates.
+//
+// Users must not utilize this in any capacity as it may cause
+// crashes and/or unexpected behavior.
+void DataSet::SetParentHash(const uint64_t &parentHash) {
+  m_ParentHash = parentHash;
 }
 
 }

@@ -40,13 +40,39 @@ public:
   // This simply adds the amount to the beginning balance
   void UpdateBeginningBalance(const float &amount) { m_BeginningBalance += amount; }
 
-  const Table &GetTable(const uint64_t &id) const { return m_TableMap.at(id); }
-  Table &GetTable(const uint64_t &id) { return m_TableMap.at(id); }
+  const Table &GetTable(const uint64_t &hash) const { return m_TableMap.at(hash); }
+  Table &GetTable(const uint64_t &hash) { return m_TableMap.at(hash); }
 
-  const DataSet &GetDataSet(const uint64_t &id) const { return m_DataSetMap.at(id); }
-  DataSet &GetDataSet(const uint64_t &id) { return m_DataSetMap.at(id); }
+  const bool TableExists(const uint64_t &hash) const { return m_TableMap.find(hash) != m_TableMap.end(); }
 
+  void ReplaceTable(const uint64_t &oldHash, const std::string &newName, const std::string &newParentLegalName, const uint64_t &parentHash);
+  
+  void RemoveTable(const uint64_t &hash, const uint64_t &parentHash);
 
+  // Used to create a table at a given index, if idx is 0 and parentHash is 0, it's considered a root table
+  void AddTable(const int32_t &index, const std::string &name, const std::string &parentLegalName, const uint64_t &parentHash);
+
+  const DataSet &GetDataSet(const uint64_t &hash) const { return m_DataSetMap.at(hash); }
+  DataSet &GetDataSet(const uint64_t &hash) { return m_DataSetMap.at(hash); }
+
+  const bool DataSetExists(const uint64_t &hash) const { return m_DataSetMap.find(hash) != m_DataSetMap.end(); }
+
+  void ReplaceDataSet(const uint64_t &oldHash, const std::string &newName, const std::string &newParentLegalName, const uint64_t &parentHash, const TableTracking &tracking, const bool &incrementsTable);
+
+  void RemoveDataSet(const uint64_t &hash, const uint64_t &parentHash);
+
+  void AddDataSet(const int32_t &index, const std::string &name, const std::string &parentLegalName, const uint64_t &parentHash, const TableTracking &tracking, const bool &incrementsTable);
+
+  const std::string &GetString(const uint64_t &hash) const { return m_Strings.at(hash); }
+  std::string &GetString(const uint64_t &hash) { return m_Strings.at(hash); }
+
+  const bool StringExists(const uint64_t &hash) const { return m_Strings.find(hash) != m_Strings.end(); }
+
+  void ReplaceString(const uint64_t &oldHash, const std::string &newString, const std::string &parentName, const uint64_t &parentHash);
+
+  void RemoveString(const uint64_t &hash, const uint64_t &parentHash);
+
+  void AddString(const int32_t &index, const std::string &newString, const std::string &parentName, const uint64_t &parentHash);
 private:
   // Renders the accounts given for the income statement; Used by
   //  OnRenderIncomeStatement();
@@ -91,9 +117,9 @@ private:
 
   std::vector<uint64_t> m_RootTableHashes;
 
-  std::unordered_map<TableHash, Table> m_TableMap;
-  std::unordered_map<DataSetHash, DataSet> m_DataSetMap;
-
+  std::unordered_map<uint64_t, Table> m_TableMap;
+  std::unordered_map<uint64_t, DataSet> m_DataSetMap;
+  std::unordered_map<uint64_t, std::string> m_Strings;
 };
 
 }

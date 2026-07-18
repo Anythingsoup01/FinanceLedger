@@ -12,7 +12,7 @@ namespace Ferret {
 Statements::Statements() {
   uint64_t tableHash = Utils::GenerateHash64("Test");
   m_RootTableHashes.push_back(tableHash);
-  m_TableMap.emplace(std::pair<uint64_t, Table>(tableHash, Table("Test", std::string())));
+  m_TableMap.emplace(std::pair<uint64_t, Table>(tableHash, Table("Test", std::string(), 0)));
 }
 
 void Statements::OnRenderData() {
@@ -359,6 +359,155 @@ void Statements::OnRenderBalanceStatement() {
     ImGui::EndTable();
   }
   ImGui::PopStyleVar();
+}
+
+void Statements::ReplaceTable(const uint64_t &oldHash, const std::string &newName, const std::string &newParentLegalName, const uint64_t &parentHash) {
+  if (!TableExists(oldHash))
+    return;
+
+  Table table_copy = GetTable(oldHash); // Copy Table
+  table_copy.SetName(newName, newParentLegalName);
+  uint64_t newHash = table_copy.GetHash();
+  m_TableMap.emplace(std::pair<uint64_t, Table>(newHash, table_copy));
+
+  Table &table = m_TableMap.at(newHash);
+  for (auto &[index, data] : table.GetElements()) {
+    switch (data.Type) {
+      case ElementType::Table: {
+        Table &currTable = m_TableMap.at(data.ElementHash);
+        ReplaceTable(data.ElementHash, currTable.GetName(), newParentLegalName + newName, table.GetHash());
+        break;
+      }
+      case ElementType::DataSet: {
+        DataSet &currDataSet = m_DataSetMap.at(data.ElementHash);
+        ReplaceDataSet(data.ElementHash, currDataSet.GetName(), newParentLegalName + newName, table.GetHash(), currDataSet.GetTracking(), currDataSet.GetIncrementsTotal());
+        break;
+      }
+      case ElementType::String: {
+        std::string currString = m_Strings.at(data.ElementHash);
+        ReplaceString(data.ElementHash, currString, newParentLegalName + newName, table.GetHash());
+      }
+      default: break;
+    }
+  }
+ 
+  m_TableMap.erase(oldHash);
+}
+
+void Statements::RemoveTable(const uint64_t &hash, const uint64_t &parentHash) {
+  if (!TableExists(hash))
+    return;
+
+  Table &table = m_TableMap.at(hash);
+  for (auto &[index, data] : table.GetElements()) {
+    switch (data.Type) {
+      case ElementType::Table: {
+        RemoveTable(data.ElementHash, hash);
+        break;
+      }
+      case ElementType::DataSet: {
+        RemoveDataSet(data.ElementHash, hash);
+        break;
+      }
+      case ElementType::String: {
+        RemoveString(data.ElementHash, hash);
+      }
+      default: break;
+    }
+  }
+
+  GetTable(parentHash).RemoveElement(hash);
+  m_TableMap.erase(hash);
+}
+
+void Statements::AddTable(const int32_t &index, const std::string &name, const std::string &parentLegalName, const uint64_t &parentHash) {
+  uint64_t hash = Utils::GenerateHash64(parentLegalName + name);
+  if (TableExists(hash)) {
+    return;
+  }
+
+  if (index == 0 && parentHash == 0) { // Root table
+    m_RootTableHashes.push_back(hash);
+  } else {
+    Table &parentTable = GetTable(parentHash);
+    parentTable.AddElement(index, hash, ElementType::Table);
+  }
+
+  m_TableMap.emplace(std::pair<uint64_t, Table>(hash, Table(name, parentLegalName, parentHash)));
+}
+
+void Statements::ReplaceDataSet(const uint64_t &oldHash, const std::string &newName, const std::string &newParentLegalName, const uint64_t &parentHash, const TableTracking &tracking, const bool &incrementsTable) {
+  if (!DataSetExists(oldHash))
+    return;
+
+  DataSet dataSet = GetDataSet(oldHash); // Copy Data Set
+  dataSet.SetName(newName, newParentLegalName);
+  dataSet.SetTracking(tracking);
+  dataSet.SetIncrementsTotal(incrementsTable);
+  uint64_t newID = dataSet.GetHash();
+
+  Table &parentTable = GetTable(parentHash);
+
+  parentTable.ReplaceElement(oldHash, newID, ElementType::DataSet);
+  dataSet.NewDataAvailable();
+
+  m_DataSetMap.erase(oldHash);
+  m_DataSetMap.emplace(std::pair<uint64_t, DataSet>(newID, dataSet));
+}
+
+void Statements::RemoveDataSet(const uint64_t &hash, const uint64_t &parentHash) {
+  if (!DataSetExists(hash)) {
+    return;
+  }
+
+  Table &parentTable = m_TableMap.at(parentHash);
+  parentTable.RemoveElement(hash);
+  m_DataSetMap.erase(hash);
+}
+
+void Statements::AddDataSet(const int32_t &idx, const std::string &name, const std::string &parentLegalName, const uint64_t &parentHash, const TableTracking &tracking, const bool &incrementsTable) {
+  uint64_t hash = Utils::GenerateHash64(parentLegalName + name);
+  if (DataSetExists(hash)) {
+    return;
+  }
+
+  Table &parentTable = GetTable(parentHash);
+  parentTable.AddElement(idx, hash, ElementType::DataSet);
+  m_DataSetMap.emplace(std::pair<uint64_t, DataSet>(hash, DataSet(name, parentLegalName, parentHash, tracking, incrementsTable)));
+}
+
+void Statements::ReplaceString(const uint64_t &oldHash, const std::string &newString, const std::string &newParentLegalName, const uint64_t &parentHash) {
+  if (!StringExists(oldHash))
+    return;
+
+  uint64_t newHash = Utils::GenerateHash64(newParentLegalName + newString);
+  Table &parentTable = GetTable(parentHash);
+
+  parentTable.ReplaceElement(oldHash, newHash, ElementType::String);
+
+  m_Strings.erase(oldHash);
+  m_Strings.emplace(std::pair<uint64_t, std::string>(newHash, newString));
+}
+
+void Statements::RemoveString(const uint64_t &hash, const uint64_t &parentHash) {
+  if (!StringExists(hash)) {
+    return;
+  }
+
+  Table &parentTable = m_TableMap.at(parentHash);
+  parentTable.RemoveElement(hash);
+  m_DataSetMap.erase(hash);
+}
+
+void Statements::AddString(const int32_t &index, const std::string &str, const std::string &parentLegalName, const uint64_t &parentHash) {
+  uint64_t hash = Utils::GenerateHash64(parentLegalName + str);
+  if (StringExists(hash)) {
+    return;
+  }
+
+  Table &parentTable = GetTable(parentHash);
+  parentTable.AddElement(index, hash, ElementType::String);
+  m_Strings.emplace(std::pair<uint64_t, std::string>(hash, str));
 }
 
 }
