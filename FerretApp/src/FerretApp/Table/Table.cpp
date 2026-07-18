@@ -129,6 +129,15 @@ void Table::SetParentHash(const uint64_t &parentHash) {
   m_ParentHash = parentHash;
 }
 
+const ElementData &Table::GetElement(const int32_t &index) const {
+  if (m_Elements.find(index) == m_Elements.end()) { // Doesn't Exist, return an empty element (for editing purposes)
+    static ElementData s_EmptyData = ElementData{0, ElementType::NONE};
+    return s_EmptyData;
+  }
+
+  return m_Elements.at(index);
+}
+
 int32_t Table::GetElementIdx(const uint64_t &hash) {
   for (auto &[index, data] : m_Elements) {
     if (hash == data.ElementHash) {

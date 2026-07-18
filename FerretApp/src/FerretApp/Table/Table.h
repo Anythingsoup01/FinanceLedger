@@ -59,7 +59,7 @@ public:
   const uint32_t GetElementCount() const { return m_Elements.size(); }
 
   const std::unordered_map<int32_t, ElementData> &GetElements() const { return m_Elements; }
-  const ElementData &GetElement(int32_t index) const { return m_Elements.at(index); }
+  const ElementData &GetElement(const int32_t &index) const;
 public:
   //////////////////////////////
   /// Element Manipulation ////
