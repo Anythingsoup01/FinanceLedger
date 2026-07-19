@@ -9,6 +9,8 @@
 #include "FerretApp/Statements/Statements.h"
 #include "FerretApp/Journal/Journal.h"
 
+#include "FerretApp/Popup/Popup.h"
+
 #include <yaml-cpp/yaml.h>
 
 namespace Ferret {
@@ -34,6 +36,8 @@ public:
 
   const Journal &GetJournal() const { return m_Journal; }
   Journal &GetJournal() { return m_Journal; }
+
+  Popup &GetPopupManager() { return m_Popup; }
 
 private:
   // Opens a save file from a given path
@@ -75,9 +79,12 @@ private:
   Journal m_Journal;
   bool m_ContextDirty = false;
 
+  Popup m_Popup;
+
   inline static FerretLayer *s_Instance = nullptr;
 private:
   friend class Popup;
+  friend class LedgerPopup;
 };
 
 } // namespace Ferret
