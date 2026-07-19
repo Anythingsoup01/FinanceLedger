@@ -72,7 +72,7 @@ public:
 
   void RemoveString(const uint64_t &hash, const uint64_t &parentHash);
 
-  void AddString(const int32_t &index, const std::string &newString, const std::string &parentName, const uint64_t &parentHash);
+  void AddString(const int32_t &index, const std::string &newString, const std::string &parentLegalName, const uint64_t &parentHash);
 private:
   // Renders the accounts given for the income statement; Used by
   //  OnRenderIncomeStatement();

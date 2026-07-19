@@ -3,6 +3,8 @@
 
 #include "FerretApp/Layer/FerretLayer.h"
 
+#include "Ferret/Core/Application.h"
+
 #include "FerretApp/Popup/Popup.h"
 
 #include <imgui.h>
@@ -10,6 +12,30 @@
 extern ImVec2 g_EntrySize;
 
 namespace Ferret {
+
+ElementType StringToElementType(const std::string &typeStr) {
+  if (typeStr == "Table") {
+    return ElementType::Table;
+  } else if (typeStr == "TableTotal") {
+    return ElementType::TableTotal;
+  } else if (typeStr == "DataSet") {
+    return ElementType::DataSet;
+  } else if (typeStr == "String") {
+    return ElementType::String;
+  }
+
+  return ElementType::NONE;
+}
+
+std::string ElementTypeToString(const ElementType &type) {
+  switch (type) {
+    case ElementType::Table: return "Table";
+    case ElementType::TableTotal: return "TableTotal";
+    case ElementType::DataSet: return "DataSet";
+    case ElementType::String: return "String";
+    default: return "Empty";
+  }
+}
 
 Table::Table(const std::string &name, const std::string &parentLegalName, const uint64_t &parentHash)
   : m_Name(name), m_ParentLegalName(parentLegalName), m_ParentHash(parentHash), m_Cols(1) {
@@ -27,7 +53,7 @@ void Table::Render() {
     ImGui::TableSetupColumn(m_Name.c_str());
     Utils::HeaderCentered(1);
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-      Popup::ViewStatementTable(m_Hash);
+      FerretLayer::Get().GetPopupManager().StatementViewTable(m_Hash);
     }
 
     ImGui::TableNextRow();
@@ -67,6 +93,11 @@ void Table::RenderDrawTable() {
           case ElementType::Table: {
             auto &table = FerretLayer::Get().GetStatements().GetTable(element.ElementHash);
             table.Render();
+            break;
+          }
+          case ElementType::TableTotal: {
+            auto &table = FerretLayer::Get().GetStatements().GetTable(element.ElementHash);
+            ImGui::Text("%.2f", table.GetTotal());
             break;
           }
           case ElementType::DataSet: {
@@ -172,7 +203,8 @@ void Table::RemoveElement(const int32_t &index) {
 
 void Table::AddElement(const int32_t &index, const uint64_t &hash, const ElementType &type) {
   if (index >= m_Elements.size() && index <= m_Elements.size() + m_Cols - 1) {
-    for (int i = m_Elements.size(); i < m_Elements.size() + m_Cols; i++) {
+    size_t elementsCount = m_Elements.size();
+    for (int i = elementsCount; i < elementsCount + m_Cols; i++) {
       m_Elements.emplace(std::pair<int32_t, ElementData>(i, ElementData{0, ElementType::NONE}));
     }
   }
@@ -180,6 +212,81 @@ void Table::AddElement(const int32_t &index, const uint64_t &hash, const Element
   ElementData &data = m_Elements.at(index);
   data.ElementHash = hash;
   data.Type = type;
+}
+
+void Table::AddColumn(const int32_t &n) {
+  m_Cols += n;
+
+  std::unordered_map<int32_t, ElementData> newElementIdxs;
+  for (auto &[idx, element] : m_Elements) {
+    int offset = std::floor((float)idx / (float)m_Cols);
+    newElementIdxs.emplace(std::pair<int32_t, ElementData>(idx + offset, element));
+  }
+
+  m_Elements = newElementIdxs;
+
+  int32_t elementsNeededToCompleteLastRow = m_Cols - (m_Elements.size() % m_Cols);
+
+  int32_t newElementCount = m_Elements.size() + elementsNeededToCompleteLastRow;
+  for (int i = 0; i < newElementCount; i++) {
+    if (m_Elements.find(i) == m_Elements.end()) { // An element that doesn't yet exist in the element map
+      m_Elements.emplace(std::pair<int32_t, ElementData>(i, ElementData{0, ElementType::NONE}));
+    }
+  }
+}
+
+void Table::RemoveColumn(const int32_t &idx, const int32_t &n) {
+  uint32_t newCols = m_Cols - n < 1 ? 1 : m_Cols - n;
+
+  std::unordered_map<int32_t, ElementData> newElementIdxs;
+  uint32_t newIdx = 0;
+  for (int i = 0; i < m_Elements.size(); i++) {
+    int indexInRow = i % m_Cols;
+    ElementData &element = m_Elements.at(i);
+    if (indexInRow >= newCols) {
+      uint64_t hash = element.ElementHash;
+      uint64_t tableHash = m_Hash;
+  
+      switch (element.Type) {
+        case ElementType::Table: {
+          Application::Get().SubmitToMainThread([hash, tableHash](){
+            FerretLayer::Get().GetStatements().RemoveTable(hash, tableHash);
+          });
+          break;
+        }
+        case ElementType::DataSet: {
+          Application::Get().SubmitToMainThread([hash, tableHash](){
+            FerretLayer::Get().GetStatements().RemoveDataSet(hash, tableHash);
+          });
+          break;
+        }
+        case ElementType::String: {
+          Application::Get().SubmitToMainThread([hash, tableHash](){
+            FerretLayer::Get().GetStatements().RemoveString(hash, tableHash);
+          });
+          break;
+        }
+        default: break;
+      }
+    } else {
+      newElementIdxs.emplace(std::pair<uint32_t, ElementData>(newIdx++, element));
+    }
+  }
+
+  m_Elements = newElementIdxs;
+  m_Cols = newCols;
+
+}
+
+void Table::RecalculateElementCount() {
+  int32_t elementsNeededToCompleteLastRow = m_Cols - (m_Elements.size() % m_Cols);
+
+  int32_t newElementCount = m_Elements.size() + elementsNeededToCompleteLastRow;
+  for (int i = 0; i < newElementCount; i++) {
+    if (m_Elements.find(i) == m_Elements.end()) { // An element that doesn't yet exist in the element map
+      m_Elements.emplace(std::pair<int32_t, ElementData>(i, ElementData{0, ElementType::NONE}));
+    }
+  }
 }
 
 }

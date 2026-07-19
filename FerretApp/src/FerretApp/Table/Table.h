@@ -4,9 +4,16 @@ namespace Ferret {
 
 enum class ElementType {
   NONE = 0,
-  Table, DataSet,
-  String
+  Table,
+  TableTotal,
+  DataSet,
+  String,
+  MAX_ITEM // Keep Last
 };
+
+ElementType StringToElementType(const std::string &typeStr);
+
+std::string ElementTypeToString(const ElementType &type);
 
 struct ElementData {
   uint64_t ElementHash; // IF 0 THEN IT'S BLANK
