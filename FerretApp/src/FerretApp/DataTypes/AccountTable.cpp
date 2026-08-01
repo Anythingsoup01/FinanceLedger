@@ -134,7 +134,7 @@ void AccountTable::Draw() {
 
     ImGui::TableSetColumnIndex(0);
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-      Popup::ViewTable(m_Number);
+      FerretLayer::Get().GetPopupManager().LedgerViewTable(m_Number);
     }
 
 

@@ -19,7 +19,7 @@ namespace Ferret {
 void Ledger::OnRenderData() {
   if (m_Tables.empty()) {
     if (ImGui::Button("Add Table", g_GenericTableSize))
-      Popup::SetRenderPopup(PopupType::CreateTable);
+      FerretLayer::Get().GetPopupManager().SetLedgerPopup(LedgerPopupType::CreateTable);
 
     if (ImGui::IsItemHovered())
       ImGui::SetTooltip("Used to create a new table either in the row or in the first column");
@@ -50,7 +50,7 @@ void Ledger::OnRenderData() {
       }
 
       if (ImGui::Button("Add Table", g_GenericTableSize))
-        Popup::SetRenderPopup(PopupType::CreateTable);
+        FerretLayer::Get().GetPopupManager().SetLedgerPopup(LedgerPopupType::CreateTable);
 
       if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Used to create a new table either in the row or in the first column");

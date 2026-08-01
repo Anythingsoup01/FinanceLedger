@@ -98,7 +98,7 @@ bool EntryTable::RenderTable(const std::string &tableName, const int &tableIndex
     for (auto &[id, entry] : m_Entries) {
       ImGui::TableNextRow();
       if (entry.RenderEntry())
-        Popup::ViewEntry(m_AccountID, id, m_CreditTable);
+        FerretLayer::Get().GetPopupManager().LedgerViewEntry(m_AccountID, id, m_CreditTable);
     }
   }
 

@@ -13,6 +13,9 @@ class StatementPopup {
 public:
   StatementPopup() = default;
 
+  void SetPopup(const StatementPopupType &popup) { m_StatementPopupType = popup; }
+
+
   void Render();
 
   // Sets the context required to view a statement table

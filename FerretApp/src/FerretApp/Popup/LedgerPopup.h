@@ -15,6 +15,8 @@ class LedgerPopup {
 public:
   LedgerPopup() = default;
 
+  void SetPopup(const LedgerPopupType &popup) { m_LedgerPopupType = popup; }
+
   void Render();
 
   // Sets the context required to view an entry

@@ -1,13 +1,5 @@
 #include "Popup.h"
 
-#include "Ferret/Core/Application.h"
-#include "Ferret/Core/Input.h"
-
-#include "FerretApp/Layer/FerretLayer.h"
-#include "FerretApp/Ledger/Ledger.h"
-
-#include "FerretApp/Utils/Utils.h"
-
 #include <imgui.h>
 
 extern ImVec2 g_EntrySize;

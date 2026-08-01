@@ -128,7 +128,7 @@ void FerretLayer::OnUIRender() {
     default: break;
   }
 
-  Popup::Render();
+  m_Popup.Render();
 
   ImGui::End();
 }
@@ -181,7 +181,7 @@ bool FerretLayer::OnWindowClose(WindowCloseEvent &e) {
     return true; // Not sure if it needs to complete this function or not before closing
   }
 
-  Popup::SetRenderPopup(PopupType::SaveAndExit);
+  m_Popup.SetLedgerPopup(LedgerPopupType::SaveAndExit);
 
   return true;
 }
@@ -206,7 +206,7 @@ void FerretLayer::Open() {
   }
 
   if (m_ContextDirty) { // Prompt the user to save before swapping tables
-    Popup::SetRenderPopup(PopupType::SaveAndOpenExistingTables);
+    m_Popup.SetLedgerPopup(LedgerPopupType::SaveAndOpenExistingTables);
     m_TempLoadPath = tmp;
     return;
   }

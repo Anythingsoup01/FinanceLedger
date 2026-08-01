@@ -89,7 +89,7 @@ void Journal::OnRenderJournalEntry(const JournalEntry &entry) {
       ImGui::SetTooltip("Double Click to Edit Entry");
 
       if (ImGui::IsMouseDoubleClicked(0)) {
-        Popup::ViewEntry(entry.CreditAccountID, id, true);
+        FerretLayer::Get().GetPopupManager().LedgerViewEntry(entry.CreditAccountID, id, true);
       }
     }
 
@@ -99,7 +99,7 @@ void Journal::OnRenderJournalEntry(const JournalEntry &entry) {
       ImGui::SetTooltip("Double Click to Edit Entry");
 
       if (ImGui::IsMouseDoubleClicked(0)) {
-        Popup::ViewEntry(entry.CreditAccountID, id, true);
+        FerretLayer::Get().GetPopupManager().LedgerViewEntry(entry.CreditAccountID, id, true);
       }
     }
 
@@ -110,7 +110,7 @@ void Journal::OnRenderJournalEntry(const JournalEntry &entry) {
       ImGui::SetTooltip("Double Click to Edit Entry");
 
       if (ImGui::IsMouseDoubleClicked(0)) {
-        Popup::ViewEntry(entry.CreditAccountID, id, true);
+        FerretLayer::Get().GetPopupManager().LedgerViewEntry(entry.CreditAccountID, id, true);
       }
     }
 

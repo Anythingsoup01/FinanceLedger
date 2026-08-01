@@ -642,6 +642,10 @@ void LedgerPopup::RenderTableDetailsPopup() {
       memset(&accountID, 0, sizeof(int));
       memset(&creditAcc, 0, sizeof(bool));
       memset(&tracking, 0, sizeof(TableTracking));
+
+      editingTable = false;
+
+      FerretLayer::Get().GetLedger().RemoveTable(table.GetAccountNumber());
     }
 
     if (ImGui::IsItemHovered()) {
